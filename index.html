@@ -7,14 +7,20 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="GuitarTrack">
-    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎸</text></svg>">
     <link rel="manifest" href="manifest.json">
     <title>Guitar Tracker</title>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+
     <style>
         :root {
             --bg: #0d0d0d;
             --surface: #1a1a1a;
             --surface-2: #262626;
+            --surface-3: #333;
             --accent: #ff6b35;
             --accent-glow: rgba(255, 107, 53, 0.15);
             --text: #f0f0f0;
@@ -35,66 +41,247 @@
             background: var(--bg);
             color: var(--text);
             min-height: 100vh;
-            padding-top: calc(var(--safe-top) + 10px);
-            padding-bottom: calc(var(--safe-bottom) + 80px);
             -webkit-tap-highlight-color: transparent;
             overscroll-behavior: none;
         }
 
-        .app-header {
-            padding: 15px 20px;
-            text-align: center;
-        }
-
-        .app-header h1 {
-            font-size: 1.5rem;
-            font-weight: 700;
-            letter-spacing: -0.5px;
-        }
-
-        /* BOTTOM NAV */
-        .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: var(--surface);
-            border-top: 1px solid var(--border);
-            display: flex;
-            justify-content: space-around;
-            padding: 8px 0 calc(var(--safe-bottom) + 8px);
-            z-index: 100;
-        }
-
-        .nav-item {
+        /* ===== AUTH SCREEN ===== */
+        .auth-screen {
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 2px;
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            font-size: 0.7rem;
-            cursor: pointer;
-            padding: 5px 15px;
-            transition: color 0.2s;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 20px;
+            text-align: center;
         }
 
-        .nav-item.active { color: var(--accent); }
-        .nav-item span.icon { font-size: 1.4rem; }
+        .auth-screen h1 { font-size: 2rem; margin-bottom: 10px; }
+        .auth-screen p { color: var(--text-muted); margin-bottom: 30px; }
 
-        /* PAGES */
-        .page { display: none; padding: 0 16px; }
-        .page.active { display: block; }
+        .auth-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 28px;
+            background: white;
+            color: #333;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.1s;
+        }
 
-        /* CARDS */
+        .auth-btn:active { transform: scale(0.97); }
+        .auth-btn img { width: 24px; height: 24px; }
+
+        /* ===== APP SHELL ===== */
+        .app { display: none; }
+        .app.active { display: block; }
+
+        /* ===== MOBILE LAYOUT ===== */
+        @media (max-width: 768px) {
+            .desktop-layout { display: none !important; }
+
+            .mobile-layout {
+                display: block;
+                padding-top: calc(var(--safe-top) + 10px);
+                padding-bottom: calc(var(--safe-bottom) + 80px);
+            }
+
+            .mobile-header {
+                padding: 12px 20px;
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+            }
+
+            .mobile-header h1 { font-size: 1.4rem; font-weight: 700; }
+
+            .mobile-header .user-avatar {
+                width: 32px;
+                height: 32px;
+                border-radius: 50%;
+                cursor: pointer;
+            }
+
+            .mobile-page { display: none; padding: 0 16px; }
+            .mobile-page.active { display: block; }
+
+            .bottom-nav {
+                position: fixed;
+                bottom: 0; left: 0; right: 0;
+                background: var(--surface);
+                border-top: 1px solid var(--border);
+                display: flex;
+                justify-content: space-around;
+                padding: 8px 0 calc(var(--safe-bottom) + 8px);
+                z-index: 100;
+            }
+
+            .nav-item {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 2px;
+                background: none;
+                border: none;
+                color: var(--text-muted);
+                font-size: 0.7rem;
+                cursor: pointer;
+                padding: 5px 12px;
+            }
+
+            .nav-item.active { color: var(--accent); }
+            .nav-item .icon { font-size: 1.3rem; }
+
+            .fab {
+                position: fixed;
+                bottom: calc(var(--safe-bottom) + 75px);
+                right: 20px;
+                width: 56px; height: 56px;
+                border-radius: 50%;
+                background: var(--accent);
+                color: white;
+                border: none;
+                font-size: 1.8rem;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                box-shadow: 0 4px 20px rgba(255, 107, 53, 0.4);
+                cursor: pointer;
+                z-index: 50;
+            }
+        }
+
+        /* ===== DESKTOP LAYOUT ===== */
+        @media (min-width: 769px) {
+            .mobile-layout { display: none !important; }
+
+            .desktop-layout {
+                display: grid;
+                grid-template-columns: 240px 1fr;
+                min-height: 100vh;
+            }
+
+            .desktop-sidebar {
+                background: var(--surface);
+                border-right: 1px solid var(--border);
+                padding: 30px 20px;
+                position: sticky;
+                top: 0;
+                height: 100vh;
+                display: flex;
+                flex-direction: column;
+            }
+
+            .desktop-sidebar h1 {
+                font-size: 1.3rem;
+                margin-bottom: 30px;
+                padding: 0 10px;
+            }
+
+            .sidebar-nav { flex: 1; }
+
+            .sidebar-item {
+                display: flex;
+                align-items: center;
+                gap: 12px;
+                padding: 12px 14px;
+                border-radius: 10px;
+                background: none;
+                border: none;
+                color: var(--text-muted);
+                font-size: 0.95rem;
+                cursor: pointer;
+                width: 100%;
+                text-align: left;
+                transition: all 0.15s;
+                margin-bottom: 4px;
+            }
+
+            .sidebar-item:hover { background: var(--surface-2); color: var(--text); }
+            .sidebar-item.active { background: var(--accent-glow); color: var(--accent); }
+            .sidebar-item .icon { font-size: 1.2rem; }
+
+            .sidebar-user {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                padding: 12px 10px;
+                border-top: 1px solid var(--border);
+                margin-top: 10px;
+            }
+
+            .sidebar-user img {
+                width: 32px; height: 32px;
+                border-radius: 50%;
+            }
+
+            .sidebar-user .name {
+                font-size: 0.85rem;
+                flex: 1;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .sidebar-user .logout-btn {
+                background: none;
+                border: none;
+                color: var(--text-muted);
+                cursor: pointer;
+                font-size: 1.1rem;
+            }
+
+            .desktop-main {
+                padding: 40px;
+                max-width: 1000px;
+            }
+
+            .desktop-main h2 {
+                font-size: 1.5rem;
+                margin-bottom: 5px;
+            }
+
+            .desktop-main .subtitle {
+                color: var(--text-muted);
+                margin-bottom: 25px;
+                font-size: 0.9rem;
+            }
+
+            .desktop-page { display: none; }
+            .desktop-page.active { display: block; }
+
+            .desktop-add-btn {
+                padding: 10px 20px;
+                background: var(--accent);
+                color: white;
+                border: none;
+                border-radius: 10px;
+                font-size: 0.9rem;
+                font-weight: 600;
+                cursor: pointer;
+                margin-bottom: 20px;
+                transition: opacity 0.15s;
+            }
+
+            .desktop-add-btn:hover { opacity: 0.85; }
+        }
+
+        /* ===== SHARED COMPONENTS ===== */
         .card {
             background: var(--surface);
             border: 1px solid var(--border);
             border-radius: var(--radius);
             padding: 16px;
             margin-bottom: 12px;
+            transition: border-color 0.2s;
         }
+
+        .card:hover { border-color: var(--surface-3); }
 
         .card-header {
             display: flex;
@@ -103,39 +290,21 @@
             margin-bottom: 10px;
         }
 
-        .card-title {
-            font-size: 1.1rem;
-            font-weight: 600;
-        }
+        .card-title { font-size: 1.1rem; font-weight: 600; }
 
         .card-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
             gap: 8px;
         }
 
-        .card-field {
-            display: flex;
-            flex-direction: column;
-        }
+        .card-field { display: flex; flex-direction: column; }
+        .card-field .label { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); }
+        .card-field .value { font-size: 0.9rem; margin-top: 1px; }
 
-        .card-field .label {
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-muted);
-        }
-
-        .card-field .value {
-            font-size: 0.9rem;
-            margin-top: 1px;
-        }
-
-        /* BADGES */
         .badge {
             display: inline-flex;
             align-items: center;
-            gap: 4px;
             padding: 4px 10px;
             border-radius: 20px;
             font-size: 0.75rem;
@@ -147,44 +316,29 @@
         .badge-overdue { background: rgba(248, 113, 113, 0.15); color: var(--danger); }
         .badge-none { background: var(--surface-2); color: var(--text-muted); }
 
-        /* BUTTONS */
-        .fab {
-            position: fixed;
-            bottom: calc(var(--safe-bottom) + 75px);
-            right: 20px;
-            width: 56px;
-            height: 56px;
-            border-radius: 50%;
-            background: var(--accent);
-            color: white;
-            border: none;
-            font-size: 1.8rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: 0 4px 20px rgba(255, 107, 53, 0.4);
-            cursor: pointer;
-            z-index: 50;
+        .history-item {
+            background: var(--surface);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 var(--radius) var(--radius) 0;
+            padding: 14px 16px;
+            margin-bottom: 10px;
         }
 
-        .btn {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 10px;
-            font-size: 0.95rem;
-            font-weight: 600;
-            cursor: pointer;
-            width: 100%;
-            transition: opacity 0.2s;
-        }
+        .history-item .guitar-name { font-weight: 600; font-size: 0.95rem; }
+        .history-item .date { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+        .history-item .detail { margin-top: 6px; font-size: 0.9rem; }
+        .history-item .meta { font-size: 0.8rem; color: var(--text-muted); margin-top: 4px; }
 
+        .btn { padding: 12px 20px; border: none; border-radius: 10px; font-size: 0.95rem; font-weight: 600; cursor: pointer; width: 100%; }
         .btn:active { opacity: 0.7; }
         .btn-primary { background: var(--accent); color: white; }
         .btn-secondary { background: var(--surface-2); color: var(--text); }
         .btn-danger { background: var(--danger); color: white; }
         .btn-small { padding: 6px 14px; width: auto; font-size: 0.8rem; border-radius: 8px; }
 
-        /* FORMS */
+        .actions { display: flex; gap: 8px; margin-top: 12px; }
+
+        /* SHEET (full screen form - mobile) */
         .sheet {
             display: none;
             position: fixed;
@@ -211,30 +365,48 @@
             background: var(--surface-2);
             border: none;
             color: var(--text);
-            width: 32px;
-            height: 32px;
+            width: 32px; height: 32px;
             border-radius: 50%;
             font-size: 1.1rem;
             cursor: pointer;
         }
 
-        .form-group { margin-bottom: 16px; }
-
-        .form-group label {
-            display: block;
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-bottom: 6px;
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
+        /* MODAL (desktop form) */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 200;
+            justify-content: center;
+            align-items: center;
         }
+
+        .modal-overlay.active { display: flex; }
+
+        .modal {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 30px;
+            width: 90%;
+            max-width: 520px;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .modal h3 { margin-bottom: 20px; font-size: 1.2rem; }
+
+        /* FORMS */
+        .form-group { margin-bottom: 16px; }
+        .form-group label { display: block; font-size: 0.8rem; color: var(--text-muted); margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.3px; }
 
         .form-group input,
         .form-group select,
         .form-group textarea {
             width: 100%;
             padding: 12px 14px;
-            background: var(--surface);
+            background: var(--bg);
             border: 1px solid var(--border);
             border-radius: 10px;
             color: var(--text);
@@ -251,63 +423,29 @@
         }
 
         .form-group textarea { min-height: 80px; resize: vertical; }
-        .form-group select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23888' viewBox='0 0 16 16'%3E%3Cpath d=[MAC_ADDRESS]z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
-        .form-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 12px;
-        }
-
-        /* HISTORY */
-        .history-item {
-            background: var(--surface);
-            border-left: 3px solid var(--accent);
-            border-radius: 0 var(--radius) var(--radius) 0;
-            padding: 14px 16px;
-            margin-bottom: 10px;
-        }
-
-        .history-item .guitar-name {
-            font-weight: 600;
-            font-size: 0.95rem;
-        }
-
-        .history-item .date {
-            font-size: 0.75rem;
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
             color: var(--text-muted);
-            margin-top: 2px;
         }
 
-        .history-item .detail {
-            margin-top: 6px;
-            font-size: 0.9rem;
-        }
+        .empty-state .big-icon { font-size: 3rem; margin-bottom: 10px; }
 
-        .history-item .meta {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            margin-top: 4px;
-        }
-
-        .swipe-delete {
+        /* Loading */
+        .loading {
             display: flex;
-            justify-content: flex-end;
-            margin-top: 8px;
-        }
-
-        /* SETTINGS */
-        .settings-section {
-            margin-bottom: 20px;
-        }
-
-        .settings-section h3 {
-            font-size: 0.85rem;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            font-size: 1.2rem;
             color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            margin-bottom: 10px;
         }
+
+        /* Settings */
+        .settings-section { margin-bottom: 24px; }
+        .settings-section h3 { font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
 
         .settings-btn {
             display: flex;
@@ -324,44 +462,78 @@
             margin-bottom: 8px;
         }
 
+        .settings-btn:hover { background: var(--surface-2); }
         .settings-btn .s-icon { font-size: 1.2rem; }
-
-        .empty-state {
-            text-align: center;
-            padding: 60px 20px;
-            color: var(--text-muted);
-        }
-
-        .empty-state .big-icon { font-size: 3rem; margin-bottom: 10px; }
     </style>
 </head>
 <body>
 
-    <!-- PAGES -->
-    <div class="app-header"><h1>🎸 Guitar Tracker</h1></div>
+    <!-- AUTH SCREEN -->
+    <div id="auth-screen" class="auth-screen">
+        <h1>🎸 Guitar Tracker</h1>
+        <p>Sign in to sync your data across devices</p>
+        <button class="auth-btn" onclick="signIn()">
+            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="G">
+            Sign in with Google
+        </button>
+    </div>
 
-    <div id="page-guitars" class="page active"></div>
-    <div id="page-strings" class="page"></div>
-    <div id="page-setups" class="page"></div>
-    <div id="page-settings" class="page"></div>
+    <!-- LOADING -->
+    <div id="loading-screen" class="loading" style="display:none">Loading...</div>
 
-    <!-- FAB -->
-    <button class="fab" id="fab" onclick="handleFab()">+</button>
+    <!-- APP -->
+    <div id="app" class="app">
 
-    <!-- BOTTOM NAV -->
-    <nav class="bottom-nav">
-        <button class="nav-item active" data-page="guitars"><span class="icon">🎸</span>Guitars</button>
-        <button class="nav-item" data-page="strings"><span class="icon">🎵</span>Strings</button>
-        <button class="nav-item" data-page="setups"><span class="icon">🔧</span>Setups</button>
-        <button class="nav-item" data-page="settings"><span class="icon">⚙️</span>Settings</button>
-    </nav>
+        <!-- ===== MOBILE LAYOUT ===== -->
+        <div class="mobile-layout">
+            <div class="mobile-header">
+                <h1>🎸 Guitar Tracker</h1>
+                <img id="mobile-avatar" class="user-avatar" onclick="signOut()" src="" alt="user">
+            </div>
 
-    <!-- SHEETS (Full-screen forms) -->
-    <div class="sheet" id="sheet-guitar">
-        <div class="sheet-header">
-            <h2 id="sheet-guitar-title">Add Guitar</h2>
-            <button class="sheet-close" onclick="closeSheet('sheet-guitar')">✕</button>
+            <div id="m-page-guitars" class="mobile-page active"></div>
+            <div id="m-page-strings" class="mobile-page"></div>
+            <div id="m-page-setups" class="mobile-page"></div>
+            <div id="m-page-settings" class="mobile-page"></div>
+
+            <button class="fab" id="m-fab" onclick="handleFab()">+</button>
+
+            <nav class="bottom-nav">
+                <button class="nav-item active" data-page="guitars"><span class="icon">🎸</span>Guitars</button>
+                <button class="nav-item" data-page="strings"><span class="icon">🎵</span>Strings</button>
+                <button class="nav-item" data-page="setups"><span class="icon">🔧</span>Setups</button>
+                <button class="nav-item" data-page="settings"><span class="icon">⚙️</span>Settings</button>
+            </nav>
         </div>
+
+        <!-- ===== DESKTOP LAYOUT ===== -->
+        <div class="desktop-layout">
+            <aside class="desktop-sidebar">
+                <h1>🎸 Guitar Tracker</h1>
+                <div class="sidebar-nav">
+                    <button class="sidebar-item active" data-page="guitars"><span class="icon">🎸</span> My Guitars</button>
+                    <button class="sidebar-item" data-page="strings"><span class="icon">🎵</span> String Changes</button>
+                    <button class="sidebar-item" data-page="setups"><span class="icon">🔧</span> Setups & Service</button>
+                    <button class="sidebar-item" data-page="settings"><span class="icon">⚙️</span> Settings</button>
+                </div>
+                <div class="sidebar-user">
+                    <img id="desktop-avatar" src="" alt="user">
+                    <span class="name" id="desktop-username"></span>
+                    <button class="logout-btn" onclick="signOut()" title="Sign out">⏻</button>
+                </div>
+            </aside>
+            <main class="desktop-main">
+                <div id="d-page-guitars" class="desktop-page active"></div>
+                <div id="d-page-strings" class="desktop-page"></div>
+                <div id="d-page-setups" class="desktop-page"></div>
+                <div id="d-page-settings" class="desktop-page"></div>
+            </main>
+        </div>
+    </div>
+
+    <!-- MOBILE SHEETS -->
+    <div class="sheet" id="sheet-guitar">
+        <div class="sheet-header"><h2 id="sheet-guitar-title">Add Guitar</h2><button class="sheet-close" onclick="closeSheet('sheet-guitar')">✕</button></div>
         <input type="hidden" id="edit-guitar-id">
         <div class="form-group"><label>Name *</label><input type="text" id="f-guitar-name" placeholder="e.g. Fender Stratocaster"></div>
         <div class="form-row">
@@ -377,10 +549,7 @@
     </div>
 
     <div class="sheet" id="sheet-string">
-        <div class="sheet-header">
-            <h2>Log String Change</h2>
-            <button class="sheet-close" onclick="closeSheet('sheet-string')">✕</button>
-        </div>
+        <div class="sheet-header"><h2>Log String Change</h2><button class="sheet-close" onclick="closeSheet('sheet-string')">✕</button></div>
         <div class="form-group"><label>Guitar *</label><select id="f-str-guitar"></select></div>
         <div class="form-group"><label>Date *</label><input type="date" id="f-str-date"></div>
         <div class="form-group"><label>String Set *</label><input type="text" id="f-str-set" placeholder="e.g. Ernie Ball Regular Slinky 10-46"></div>
@@ -390,101 +559,186 @@
     </div>
 
     <div class="sheet" id="sheet-setup">
-        <div class="sheet-header">
-            <h2>Log Setup / Service</h2>
-            <button class="sheet-close" onclick="closeSheet('sheet-setup')">✕</button>
-        </div>
+        <div class="sheet-header"><h2>Log Setup / Service</h2><button class="sheet-close" onclick="closeSheet('sheet-setup')">✕</button></div>
         <div class="form-group"><label>Guitar *</label><select id="f-setup-guitar"></select></div>
         <div class="form-group"><label>Date *</label><input type="date" id="f-setup-date"></div>
         <div class="form-group"><label>Service Type</label>
             <select id="f-setup-type">
-                <option>Full Setup</option>
-                <option>Truss Rod Adjustment</option>
-                <option>Intonation</option>
-                <option>Action Adjustment</option>
-                <option>Fret Level / Crown</option>
-                <option>Electronics Repair</option>
-                <option>Nut Replacement</option>
-                <option>Pickup Swap</option>
-                <option>Other</option>
+                <option>Full Setup</option><option>Truss Rod Adjustment</option><option>Intonation</option>
+                <option>Action Adjustment</option><option>Fret Level / Crown</option><option>Electronics Repair</option>
+                <option>Nut Replacement</option><option>Pickup Swap</option><option>Other</option>
             </select>
         </div>
-        <div class="form-group"><label>Done by</label><input type="text" id="f-setup-by" placeholder="Self, local luthier, etc."></div>
-        <div class="form-group"><label>Details *</label><textarea id="f-setup-details" placeholder="What was done, measurements, etc."></textarea></div>
+        <div class="form-group"><label>Done by</label><input type="text" id="f-setup-by" placeholder="Self, luthier, etc."></div>
+        <div class="form-group"><label>Details *</label><textarea id="f-setup-details" placeholder="What was done..."></textarea></div>
         <button class="btn btn-primary" onclick="saveSetup()">Save</button>
     </div>
 
-    <!-- Hidden file input for import -->
+    <!-- DESKTOP MODALS -->
+    <div class="modal-overlay" id="modal-guitar">
+        <div class="modal">
+            <h3 id="modal-guitar-title">Add Guitar</h3>
+            <input type="hidden" id="mf-guitar-id">
+            <div class="form-group"><label>Name *</label><input type="text" id="mf-guitar-name" placeholder="e.g. Fender Stratocaster"></div>
+            <div class="form-row">
+                <div class="form-group"><label>Brand</label><input type="text" id="mf-guitar-brand" placeholder="Fender"></div>
+                <div class="form-group"><label>Model</label><input type="text" id="mf-guitar-model" placeholder="American Pro II"></div>
+            </div>
+            <div class="form-row">
+                <div class="form-group"><label>Year</label><input type="number" id="mf-guitar-year" placeholder="2022"></div>
+                <div class="form-group"><label>Tuning</label><input type="text" id="mf-guitar-tuning" placeholder="Standard E"></div>
+            </div>
+            <div class="form-group"><label>Notes</label><textarea id="mf-guitar-notes" placeholder="Pickups, mods, serial..."></textarea></div>
+            <div style="display:flex;gap:10px"><button class="btn btn-primary" onclick="saveGuitarDesktop()">Save</button><button class="btn btn-secondary" onclick="closeModal('modal-guitar')">Cancel</button></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-string">
+        <div class="modal">
+            <h3>Log String Change</h3>
+            <div class="form-group"><label>Guitar *</label><select id="mf-str-guitar"></select></div>
+            <div class="form-group"><label>Date *</label><input type="date" id="mf-str-date"></div>
+            <div class="form-group"><label>String Set *</label><input type="text" id="mf-str-set" placeholder="e.g. Ernie Ball Regular Slinky 10-46"></div>
+            <div class="form-group"><label>Change after (days)</label><input type="number" id="mf-str-life" placeholder="30"></div>
+            <div class="form-group"><label>Notes</label><textarea id="mf-str-notes"></textarea></div>
+            <div style="display:flex;gap:10px"><button class="btn btn-primary" onclick="saveStringDesktop()">Save</button><button class="btn btn-secondary" onclick="closeModal('modal-string')">Cancel</button></div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="modal-setup">
+        <div class="modal">
+            <h3>Log Setup / Service</h3>
+            <div class="form-group"><label>Guitar *</label><select id="mf-setup-guitar"></select></div>
+            <div class="form-group"><label>Date *</label><input type="date" id="mf-setup-date"></div>
+            <div class="form-group"><label>Service Type</label>
+                <select id="mf-setup-type">
+                    <option>Full Setup</option><option>Truss Rod Adjustment</option><option>Intonation</option>
+                    <option>Action Adjustment</option><option>Fret Level / Crown</option><option>Electronics Repair</option>
+                    <option>Nut Replacement</option><option>Pickup Swap</option><option>Other</option>
+                </select>
+            </div>
+            <div class="form-group"><label>Done by</label><input type="text" id="mf-setup-by"></div>
+            <div class="form-group"><label>Details *</label><textarea id="mf-setup-details"></textarea></div>
+            <div style="display:flex;gap:10px"><button class="btn btn-primary" onclick="saveSetupDesktop()">Save</button><button class="btn btn-secondary" onclick="closeModal('modal-setup')">Cancel</button></div>
+        </div>
+    </div>
+
     <input type="file" id="import-input" accept=".json" style="display:none">
 
     <script>
-    // ========== IndexedDB Layer ==========
-    const DB_NAME = 'GuitarTrackerDB';
-    const DB_VERSION = 1;
-    let db;
+    // ============================================================
+    // FIREBASE CONFIG — Replace with YOUR config from Firebase Console
+    // ============================================================
+    const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT.appspot.com",
+        messagingSenderId: "YOUR_SENDER_ID",
+        appId: "YOUR_APP_ID"
+    };
 
-    function openDB() {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(DB_NAME, DB_VERSION);
-            request.onupgradeneeded = (e) => {
-                const db = e.target.result;
-                if (!db.objectStoreNames.contains('guitars')) db.createObjectStore('guitars', { keyPath: 'id' });
-                if (!db.objectStoreNames.contains('stringChanges')) db.createObjectStore('stringChanges', { keyPath: 'id' });
-                if (!db.objectStoreNames.contains('setups')) db.createObjectStore('setups', { keyPath: 'id' });
-            };
-            request.onsuccess = (e) => { db = e.target.result; resolve(db); };
-            request.onerror = (e) => reject(e);
-        });
-    }
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const firestore = firebase.firestore();
 
-    function dbGetAll(store) {
-        return new Promise((resolve, reject) => {
-            const tx = db.transaction(store, 'readonly');
-            const req = tx.objectStore(store).getAll();
-            req.onsuccess = () => resolve(req.result);
-            req.onerror = () => reject(req.error);
-        });
-    }
-
-    function dbPut(store, item) {
-        return new Promise((resolve, reject) => {
-            const tx = db.transaction(store, 'readwrite');
-            const req = tx.objectStore(store).put(item);
-            req.onsuccess = () => resolve();
-            req.onerror = () => reject(req.error);
-        });
-    }
-
-    function dbDelete(store, id) {
-        return new Promise((resolve, reject) => {
-            const tx = db.transaction(store, 'readwrite');
-            const req = tx.objectStore(store).delete(id);
-            req.onsuccess = () => resolve();
-            req.onerror = () => reject(req.error);
-        });
-    }
-
-    function dbClear(store) {
-        return new Promise((resolve, reject) => {
-            const tx = db.transaction(store, 'readwrite');
-            const req = tx.objectStore(store).clear();
-            req.onsuccess = () => resolve();
-            req.onerror = () => reject(req.error);
-        });
-    }
-
-    // ========== Navigation ==========
+    let currentUser = null;
+    let guitars = [], stringChanges = [], setups = [];
     let currentPage = 'guitars';
 
+    // ============================================================
+    // AUTH
+    // ============================================================
+    function signIn() {
+        const provider = new firebase.auth.GoogleAuthProvider();
+        auth.signInWithPopup(provider).catch(err => {
+            // Fallback for mobile
+            auth.signInWithRedirect(provider);
+        });
+    }
+
+    function signOut() {
+        if (confirm('Sign out?')) auth.signOut();
+    }
+
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            currentUser = user;
+            document.getElementById('auth-screen').style.display = 'none';
+            document.getElementById('loading-screen').style.display = 'flex';
+            document.getElementById('app').classList.remove('active');
+            setupAvatars(user);
+            loadData();
+        } else {
+            currentUser = null;
+            document.getElementById('auth-screen').style.display = 'flex';
+            document.getElementById('loading-screen').style.display = 'none';
+            document.getElementById('app').classList.remove('active');
+        }
+    });
+
+    function setupAvatars(user) {
+        const url = user.photoURL || '';
+        const name = user.displayName || user.email;
+        document.getElementById('mobile-avatar').src = url;
+        document.getElementById('desktop-avatar').src = url;
+        document.getElementById('desktop-username').textContent = name;
+    }
+
+    // ============================================================
+    // FIRESTORE — Real-time listeners
+    // ============================================================
+    let unsubGuitars, unsubStrings, unsubSetups;
+
+    function userCol(name) {
+        return firestore.collection('users').doc(currentUser.uid).collection(name);
+    }
+
+    function loadData() {
+        // Real-time listeners
+        unsubGuitars = userCol('guitars').onSnapshot(snap => {
+            guitars = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            onDataReady();
+        });
+
+        unsubStrings = userCol('stringChanges').orderBy('date', 'desc').onSnapshot(snap => {
+            stringChanges = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            onDataReady();
+        });
+
+        unsubSetups = userCol('setups').orderBy('date', 'desc').onSnapshot(snap => {
+            setups = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+            onDataReady();
+        });
+    }
+
+    function onDataReady() {
+        document.getElementById('loading-screen').style.display = 'none';
+        document.getElementById('app').classList.add('active');
+        render();
+    }
+
+    // ============================================================
+    // NAVIGATION
+    // ============================================================
     document.querySelectorAll('.nav-item').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             currentPage = btn.dataset.page;
-            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
-            document.getElementById('page-' + currentPage).classList.add('active');
-            document.getElementById('fab').style.display = currentPage === 'settings' ? 'none' : 'flex';
-            render();
+            document.querySelectorAll('.mobile-page').forEach(p => p.classList.remove('active'));
+            document.getElementById('m-page-' + currentPage).classList.add('active');
+            document.getElementById('m-fab').style.display = currentPage === 'settings' ? 'none' : 'flex';
+        });
+    });
+
+    document.querySelectorAll('.sidebar-item').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentPage = btn.dataset.page;
+            document.querySelectorAll('.desktop-page').forEach(p => p.classList.remove('active'));
+            document.getElementById('d-page-' + currentPage).classList.add('active');
         });
     });
 
@@ -494,54 +748,52 @@
         else if (currentPage === 'setups') openSheet('sheet-setup');
     }
 
-    // ========== Sheets ==========
+    // ============================================================
+    // SHEETS & MODALS
+    // ============================================================
     function openSheet(id, isNew) {
         if (id === 'sheet-guitar' && isNew) {
             document.getElementById('sheet-guitar-title').textContent = 'Add Guitar';
             document.getElementById('edit-guitar-id').value = '';
-            document.getElementById('f-guitar-name').value = '';
-            document.getElementById('f-guitar-brand').value = '';
-            document.getElementById('f-guitar-model').value = '';
-            document.getElementById('f-guitar-year').value = '';
-            document.getElementById('f-guitar-tuning').value = '';
-            document.getElementById('f-guitar-notes').value = '';
+            ['f-guitar-name','f-guitar-brand','f-guitar-model','f-guitar-year','f-guitar-tuning','f-guitar-notes'].forEach(x => document.getElementById(x).value = '');
         }
-        if (id === 'sheet-string') {
-            populateGuitarSelect('f-str-guitar');
-            document.getElementById('f-str-date').value = todayStr();
-            document.getElementById('f-str-set').value = '';
-            document.getElementById('f-str-life').value = '';
-            document.getElementById('f-str-notes').value = '';
-        }
-        if (id === 'sheet-setup') {
-            populateGuitarSelect('f-setup-guitar');
-            document.getElementById('f-setup-date').value = todayStr();
-            document.getElementById('f-setup-type').value = 'Full Setup';
-            document.getElementById('f-setup-by').value = '';
-            document.getElementById('f-setup-details').value = '';
-        }
+        if (id === 'sheet-string') { populateSelect('f-str-guitar'); document.getElementById('f-str-date').value = todayStr(); ['f-str-set','f-str-life','f-str-notes'].forEach(x => document.getElementById(x).value = ''); }
+        if (id === 'sheet-setup') { populateSelect('f-setup-guitar'); document.getElementById('f-setup-date').value = todayStr(); ['f-setup-by','f-setup-details'].forEach(x => document.getElementById(x).value = ''); document.getElementById('f-setup-type').value = 'Full Setup'; }
         document.getElementById(id).classList.add('active');
     }
 
     function closeSheet(id) { document.getElementById(id).classList.remove('active'); }
 
+    function openModal(id, isNew) {
+        if (id === 'modal-guitar' && isNew) {
+            document.getElementById('modal-guitar-title').textContent = 'Add Guitar';
+            document.getElementById('mf-guitar-id').value = '';
+            ['mf-guitar-name','mf-guitar-brand','mf-guitar-model','mf-guitar-year','mf-guitar-tuning','mf-guitar-notes'].forEach(x => document.getElementById(x).value = '');
+        }
+        if (id === 'modal-string') { populateSelect('mf-str-guitar'); document.getElementById('mf-str-date').value = todayStr(); ['mf-str-set','mf-str-life','mf-str-notes'].forEach(x => document.getElementById(x).value = ''); }
+        if (id === 'modal-setup') { populateSelect('mf-setup-guitar'); document.getElementById('mf-setup-date').value = todayStr(); ['mf-setup-by','mf-setup-details'].forEach(x => document.getElementById(x).value = ''); document.getElementById('mf-setup-type').value = 'Full Setup'; }
+        document.getElementById(id).classList.add('active');
+    }
+
+    function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+
     function todayStr() { return new Date().toISOString().split('T')[0]; }
 
-    async function populateGuitarSelect(selectId) {
-        const guitars = await dbGetAll('guitars');
-        const sel = document.getElementById(selectId);
+    function populateSelect(selId) {
+        const sel = document.getElementById(selId);
         sel.innerHTML = guitars.length === 0
-            ? '<option value="">No guitars added</option>'
+            ? '<option value="">No guitars</option>'
             : guitars.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
     }
 
-    // ========== Save Functions ==========
+    // ============================================================
+    // SAVE — MOBILE
+    // ============================================================
     async function saveGuitar() {
         const name = document.getElementById('f-guitar-name').value.trim();
-        if (!name) return alert('Please enter a guitar name.');
+        if (!name) return alert('Enter a guitar name.');
         const editId = document.getElementById('edit-guitar-id').value;
-        const guitar = {
-            id: editId || Date.now().toString(),
+        const data = {
             name,
             brand: document.getElementById('f-guitar-brand').value.trim(),
             model: document.getElementById('f-guitar-model').value.trim(),
@@ -549,68 +801,113 @@
             tuning: document.getElementById('f-guitar-tuning').value.trim(),
             notes: document.getElementById('f-guitar-notes').value.trim()
         };
-        await dbPut('guitars', guitar);
+        if (editId) await userCol('guitars').doc(editId).set(data);
+        else await userCol('guitars').add(data);
         closeSheet('sheet-guitar');
-        render();
     }
 
     async function saveStringChange() {
         const guitarId = document.getElementById('f-str-guitar').value;
         const date = document.getElementById('f-str-date').value;
         const stringSet = document.getElementById('f-str-set').value.trim();
-        if (!guitarId || !date || !stringSet) return alert('Fill in all required fields.');
-        await dbPut('stringChanges', {
-            id: Date.now().toString(),
+        if (!guitarId || !date || !stringSet) return alert('Fill required fields.');
+        await userCol('stringChanges').add({
             guitarId, date, stringSet,
             lifespan: parseInt(document.getElementById('f-str-life').value) || null,
             notes: document.getElementById('f-str-notes').value.trim()
         });
         closeSheet('sheet-string');
-        render();
     }
 
     async function saveSetup() {
         const guitarId = document.getElementById('f-setup-guitar').value;
         const date = document.getElementById('f-setup-date').value;
         const details = document.getElementById('f-setup-details').value.trim();
-        if (!guitarId || !date || !details) return alert('Fill in all required fields.');
-        await dbPut('setups', {
-            id: Date.now().toString(),
+        if (!guitarId || !date || !details) return alert('Fill required fields.');
+        await userCol('setups').add({
             guitarId, date,
             type: document.getElementById('f-setup-type').value,
             doneBy: document.getElementById('f-setup-by').value.trim(),
             details
         });
         closeSheet('sheet-setup');
-        render();
     }
 
-    // ========== Delete ==========
+    // ============================================================
+    // SAVE — DESKTOP
+    // ============================================================
+    async function saveGuitarDesktop() {
+        const name = document.getElementById('mf-guitar-name').value.trim();
+        if (!name) return alert('Enter a guitar name.');
+        const editId = document.getElementById('mf-guitar-id').value;
+        const data = {
+            name,
+            brand: document.getElementById('mf-guitar-brand').value.trim(),
+            model: document.getElementById('mf-guitar-model').value.trim(),
+            year: document.getElementById('mf-guitar-year').value.trim(),
+            tuning: document.getElementById('mf-guitar-tuning').value.trim(),
+            notes: document.getElementById('mf-guitar-notes').value.trim()
+        };
+        if (editId) await userCol('guitars').doc(editId).set(data);
+        else await userCol('guitars').add(data);
+        closeModal('modal-guitar');
+    }
+
+    async function saveStringDesktop() {
+        const guitarId = document.getElementById('mf-str-guitar').value;
+        const date = document.getElementById('mf-str-date').value;
+        const stringSet = document.getElementById('mf-str-set').value.trim();
+        if (!guitarId || !date || !stringSet) return alert('Fill required fields.');
+        await userCol('stringChanges').add({
+            guitarId, date, stringSet,
+            lifespan: parseInt(document.getElementById('mf-str-life').value) || null,
+            notes: document.getElementById('mf-str-notes').value.trim()
+        });
+        closeModal('modal-string');
+    }
+
+    async function saveSetupDesktop() {
+        const guitarId = document.getElementById('mf-setup-guitar').value;
+        const date = document.getElementById('mf-setup-date').value;
+        const details = document.getElementById('mf-setup-details').value.trim();
+        if (!guitarId || !date || !details) return alert('Fill required fields.');
+        await userCol('setups').add({
+            guitarId, date,
+            type: document.getElementById('mf-setup-type').value,
+            doneBy: document.getElementById('mf-setup-by').value.trim(),
+            details
+        });
+        closeModal('modal-setup');
+    }
+
+    // ============================================================
+    // DELETE
+    // ============================================================
     async function deleteGuitar(id) {
         if (!confirm('Delete this guitar and all its history?')) return;
-        await dbDelete('guitars', id);
-        const strings = await dbGetAll('stringChanges');
-        const setups = await dbGetAll('setups');
-        for (const s of strings.filter(s => s.guitarId === id)) await dbDelete('stringChanges', s.id);
-        for (const s of setups.filter(s => s.guitarId === id)) await dbDelete('setups', s.id);
-        render();
+        await userCol('guitars').doc(id).delete();
+        const strSnap = await userCol('stringChanges').where('guitarId', '==', id).get();
+        const setupSnap = await userCol('setups').where('guitarId', '==', id).get();
+        const batch = firestore.batch();
+        strSnap.docs.forEach(d => batch.delete(d.ref));
+        setupSnap.docs.forEach(d => batch.delete(d.ref));
+        await batch.commit();
     }
 
-    async function deleteString(id) {
+    async function deleteStringChange(id) {
         if (!confirm('Delete this entry?')) return;
-        await dbDelete('stringChanges', id);
-        render();
+        await userCol('stringChanges').doc(id).delete();
     }
 
     async function deleteSetup(id) {
         if (!confirm('Delete this entry?')) return;
-        await dbDelete('setups', id);
-        render();
+        await userCol('setups').doc(id).delete();
     }
 
-    // ========== Edit Guitar ==========
-    async function editGuitar(id) {
-        const guitars = await dbGetAll('guitars');
+    // ============================================================
+    // EDIT GUITAR
+    // ============================================================
+    function editGuitarMobile(id) {
         const g = guitars.find(x => x.id === id);
         if (!g) return;
         document.getElementById('sheet-guitar-title').textContent = 'Edit Guitar';
@@ -624,34 +921,54 @@
         document.getElementById('sheet-guitar').classList.add('active');
     }
 
-    // ========== String Status ==========
-    function getStringStatus(guitarId, allStrings) {
-        const changes = allStrings.filter(s => s.guitarId === guitarId).sort((a, b) => new Date(b.date) - new Date(a.date));
+    function editGuitarDesktop(id) {
+        const g = guitars.find(x => x.id === id);
+        if (!g) return;
+        document.getElementById('modal-guitar-title').textContent = 'Edit Guitar';
+        document.getElementById('mf-guitar-id').value = g.id;
+        document.getElementById('mf-guitar-name').value = g.name;
+        document.getElementById('mf-guitar-brand').value = g.brand || '';
+        document.getElementById('mf-guitar-model').value = g.model || '';
+        document.getElementById('mf-guitar-year').value = g.year || '';
+        document.getElementById('mf-guitar-tuning').value = g.tuning || '';
+        document.getElementById('mf-guitar-notes').value = g.notes || '';
+        document.getElementById('modal-guitar').classList.add('active');
+    }
+
+    // ============================================================
+    // STRING STATUS
+    // ============================================================
+    function getStringStatus(guitarId) {
+        const changes = stringChanges.filter(s => s.guitarId === guitarId).sort((a, b) => new Date(b.date) - new Date(a.date));
         if (changes.length === 0) return { cls: 'badge-none', text: 'No data', stringSet: null };
         const latest = changes[0];
         if (!latest.lifespan) return { cls: 'badge-fresh', text: 'OK', stringSet: latest.stringSet, date: latest.date };
         const due = new Date(latest.date);
         due.setDate(due.getDate() + latest.lifespan);
         const daysLeft = Math.ceil((due - new Date()) / 86400000);
-        if (daysLeft < 0) return { cls: 'badge-overdue', text: `${Math.abs(daysLeft)}d overdue`, stringSet: latest.stringSet, date: latest.date };
-        if (daysLeft <= 7) return { cls: 'badge-due', text: `${daysLeft}d left`, stringSet: latest.stringSet, date: latest.date };
-        return { cls: 'badge-fresh', text: `${daysLeft}d left`, stringSet: latest.stringSet, date: latest.date };
+        if (daysLeft < 0) return { cls: 'badge-overdue', text: `${Math.abs(daysLeft)}d overdue`, stringSet: latest.stringSet };
+        if (daysLeft <= 7) return { cls: 'badge-due', text: `${daysLeft}d left`, stringSet: latest.stringSet };
+        return { cls: 'badge-fresh', text: `${daysLeft}d left`, stringSet: latest.stringSet };
     }
 
-    // ========== Render ==========
-    async function render() {
-        const guitars = await dbGetAll('guitars');
-        const strings = await dbGetAll('stringChanges');
-        const setups = await dbGetAll('setups');
+    // ============================================================
+    // RENDER
+    // ============================================================
+    function render() {
+        renderGuitars();
+        renderStrings();
+        renderSetups();
+        renderSettings();
+    }
 
-        // Guitars page
-        const gPage = document.getElementById('page-guitars');
-        if (guitars.length === 0) {
-            gPage.innerHTML = '<div class="empty-state"><div class="big-icon">🎸</div><p>No guitars yet.<br>Tap + to add one.</p></div>';
-        } else {
-            gPage.innerHTML = guitars.map(g => {
-                const ss = getStringStatus(g.id, strings);
-                const lastSetup = setups.filter(s => s.guitarId === g.id).sort((a,b) => new Date(b.date) - new Date(a.date))[0];
+    function renderGuitars() {
+        const isMobile = window.innerWidth <= 768;
+
+        const html = guitars.length === 0
+            ? '<div class="empty-state"><div class="big-icon">🎸</div><p>No guitars yet. Add one!</p></div>'
+            : guitars.map(g => {
+                const ss = getStringStatus(g.id);
+                const lastSetup = setups.filter(s => s.guitarId === g.id)[0];
                 return `<div class="card">
                     <div class="card-header">
                         <span class="card-title">${g.name}</span>
@@ -664,86 +981,99 @@
                         ${ss.stringSet ? `<div class="card-field"><span class="label">Current Strings</span><span class="value">${ss.stringSet}</span></div>` : ''}
                         <div class="card-field"><span class="label">Last Setup</span><span class="value">${lastSetup ? `${lastSetup.date} · ${lastSetup.type}` : '—'}</span></div>
                     </div>
-                    <div style="display:flex;gap:8px;margin-top:12px">
-                        <button class="btn btn-secondary btn-small" onclick="editGuitar('${g.id}')">Edit</button>
+                    <div class="actions">
+                        <button class="btn btn-secondary btn-small" onclick="${isMobile ? `editGuitarMobile('${g.id}')` : `editGuitarDesktop('${g.id}')`}">Edit</button>
                         <button class="btn btn-danger btn-small" onclick="deleteGuitar('${g.id}')">Delete</button>
                     </div>
                 </div>`;
             }).join('');
-        }
 
-        // Strings page
-        const sPage = document.getElementById('page-strings');
-        const sortedStrings = [...strings].sort((a,b) => new Date(b.date) - new Date(a.date));
-        if (sortedStrings.length === 0) {
-            sPage.innerHTML = '<div class="empty-state"><div class="big-icon">🎵</div><p>No string changes logged yet.</p></div>';
-        } else {
-            sPage.innerHTML = sortedStrings.map(s => {
+        document.getElementById('m-page-guitars').innerHTML = html;
+        document.getElementById('d-page-guitars').innerHTML = `
+            <h2>My Guitars</h2>
+            <p class="subtitle">${guitars.length} guitar${guitars.length !== 1 ? 's' : ''} in your collection</p>
+            <button class="desktop-add-btn" onclick="openModal('modal-guitar', true)">+ Add Guitar</button>
+            ${html}
+        `;
+    }
+
+    function renderStrings() {
+        const html = stringChanges.length === 0
+            ? '<div class="empty-state"><div class="big-icon">🎵</div><p>No string changes logged yet.</p></div>'
+            : stringChanges.map(s => {
                 const g = guitars.find(x => x.id === s.guitarId);
                 return `<div class="history-item">
-                    <div class="guitar-name">${g ? g.name : 'Unknown'}</div>
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span class="guitar-name">${g ? g.name : 'Unknown'}</span>
+                        <button class="btn btn-danger btn-small" onclick="deleteStringChange('${s.id}')">✕</button>
+                    </div>
                     <div class="date">${s.date}</div>
                     <div class="detail">🎵 ${s.stringSet}</div>
                     ${s.lifespan ? `<div class="meta">⏱ Change after ${s.lifespan} days</div>` : ''}
                     ${s.notes ? `<div class="meta">${s.notes}</div>` : ''}
-                    <div class="swipe-delete"><button class="btn btn-danger btn-small" onclick="deleteString('${s.id}')">Delete</button></div>
                 </div>`;
             }).join('');
-        }
 
-        // Setups page
-        const uPage = document.getElementById('page-setups');
-        const sortedSetups = [...setups].sort((a,b) => new Date(b.date) - new Date(a.date));
-        if (sortedSetups.length === 0) {
-            uPage.innerHTML = '<div class="empty-state"><div class="big-icon">🔧</div><p>No setups logged yet.</p></div>';
-        } else {
-            uPage.innerHTML = sortedSetups.map(s => {
-                const g = guitars.find(x => x.id === s.guitarId);
-                return `<div class="history-item">
-                    <div class="guitar-name">${g ? g.name : 'Unknown'}</div>
-                    <div class="date">${s.date} · ${s.type}</div>
-                    ${s.doneBy ? `<div class="meta">Done by: ${s.doneBy}</div>` : ''}
-                    <div class="detail">${s.details}</div>
-                    <div class="swipe-delete"><button class="btn btn-danger btn-small" onclick="deleteSetup('${s.id}')">Delete</button></div>
-                </div>`;
-            }).join('');
-        }
-
-        // Settings page
-        document.getElementById('page-settings').innerHTML = `
-            <div class="settings-section">
-                <h3>Data Backup</h3>
-                <button class="settings-btn" onclick="exportData()"><span class="s-icon">📤</span> Export Data (JSON)</button>
-                <button class="settings-btn" onclick="document.getElementById('import-input').click()"><span class="s-icon">📥</span> Import Data (JSON)</button>
-            </div>
-            <div class="settings-section">
-                <h3>Danger Zone</h3>
-                <button class="settings-btn" onclick="clearAllData()" style="border-color:var(--danger)"><span class="s-icon">🗑️</span> Delete All Data</button>
-            </div>
-            <div class="settings-section">
-                <h3>About</h3>
-                <div class="card">
-                    <p style="font-size:0.85rem;color:var(--text-muted)">Guitar Tracker PWA<br>Data stored locally via IndexedDB.<br>Use Export to back up your data regularly.</p>
-                </div>
-            </div>
+        document.getElementById('m-page-strings').innerHTML = html;
+        document.getElementById('d-page-strings').innerHTML = `
+            <h2>String Changes</h2>
+            <p class="subtitle">${stringChanges.length} entries</p>
+            <button class="desktop-add-btn" onclick="openModal('modal-string')">+ Log String Change</button>
+            ${html}
         `;
     }
 
-    // ========== Export / Import ==========
-    async function exportData() {
-        const data = {
-            guitars: await dbGetAll('guitars'),
-            stringChanges: await dbGetAll('stringChanges'),
-            setups: await dbGetAll('setups'),
-            exportDate: new Date().toISOString()
-        };
+    function renderSetups() {
+        const html = setups.length === 0
+            ? '<div class="empty-state"><div class="big-icon">🔧</div><p>No setups logged yet.</p></div>'
+            : setups.map(s => {
+                const g = guitars.find(x => x.id === s.guitarId);
+                return `<div class="history-item">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span class="guitar-name">${g ? g.name : 'Unknown'}</span>
+                        <button class="btn btn-danger btn-small" onclick="deleteSetup('${s.id}')">✕</button>
+                    </div>
+                    <div class="date">${s.date} · ${s.type}</div>
+                    ${s.doneBy ? `<div class="meta">Done by: ${s.doneBy}</div>` : ''}
+                    <div class="detail">${s.details}</div>
+                </div>`;
+            }).join('');
+
+        document.getElementById('m-page-setups').innerHTML = html;
+        document.getElementById('d-page-setups').innerHTML = `
+            <h2>Setups & Service</h2>
+            <p class="subtitle">${setups.length} entries</p>
+            <button class="desktop-add-btn" onclick="openModal('modal-setup')">+ Log Setup</button>
+            ${html}
+        `;
+    }
+
+    function renderSettings() {
+        const settingsHtml = `
+            <div class="settings-section">
+                <h3>Data</h3>
+                <button class="settings-btn" onclick="exportData()"><span class="s-icon">📤</span> Export Backup (JSON)</button>
+                <button class="settings-btn" onclick="document.getElementById('import-input').click()"><span class="s-icon">📥</span> Import Backup</button>
+            </div>
+            <div class="settings-section">
+                <h3>Account</h3>
+                <button class="settings-btn" onclick="signOut()"><span class="s-icon">🚪</span> Sign Out</button>
+            </div>
+        `;
+        document.getElementById('m-page-settings').innerHTML = settingsHtml;
+        document.getElementById('d-page-settings').innerHTML = `<h2>Settings</h2><p class="subtitle">Manage your data and account</p>${settingsHtml}`;
+    }
+
+    // ============================================================
+    // EXPORT / IMPORT
+    // ============================================================
+    function exportData() {
+        const data = { guitars, stringChanges, setups, exportDate: new Date().toISOString() };
         const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
         const a = document.createElement('a');
-        a.href = url;
-        a.download = `guitar-tracker-backup-${todayStr()}.json`;
+        a.href = URL.createObjectURL(blob);
+        a.download = `guitar-tracker-${todayStr()}.json`;
         a.click();
-        URL.revokeObjectURL(url);
     }
 
     document.getElementById('import-input').addEventListener('change', async (e) => {
@@ -752,38 +1082,29 @@
         try {
             const text = await file.text();
             const data = JSON.parse(text);
-            if (!data.guitars || !data.stringChanges || !data.setups) throw new Error('Invalid format');
-            if (!confirm(`Import ${data.guitars.length} guitars, ${data.stringChanges.length} string changes, and ${data.setups.length} setups? This will REPLACE all current data.`)) return;
-            await dbClear('guitars');
-            await dbClear('stringChanges');
-            await dbClear('setups');
-            for (const g of data.guitars) await dbPut('guitars', g);
-            for (const s of data.stringChanges) await dbPut('stringChanges', s);
-            for (const s of data.setups) await dbPut('setups', s);
-            render();
+            if (!confirm(`Import ${data.guitars?.length || 0} guitars, ${data.stringChanges?.length || 0} string changes, ${data.setups?.length || 0} setups? This REPLACES current data.`)) return;
+
+            // Clear existing
+            const gSnap = await userCol('guitars').get();
+            const sSnap = await userCol('stringChanges').get();
+            const uSnap = await userCol('setups').get();
+            const batch = firestore.batch();
+            gSnap.docs.forEach(d => batch.delete(d.ref));
+            sSnap.docs.forEach(d => batch.delete(d.ref));
+            uSnap.docs.forEach(d => batch.delete(d.ref));
+            await batch.commit();
+
+            // Import new
+            for (const g of (data.guitars || [])) { const { id, ...rest } = g; await userCol('guitars').add(rest); }
+            for (const s of (data.stringChanges || [])) { const { id, ...rest } = s; await userCol('stringChanges').add(rest); }
+            for (const s of (data.setups || [])) { const { id, ...rest } = s; await userCol('setups').add(rest); }
             alert('Import complete!');
-        } catch (err) {
-            alert('Failed to import: ' + err.message);
-        }
+        } catch (err) { alert('Import failed: ' + err.message); }
         e.target.value = '';
     });
 
-    async function clearAllData() {
-        if (!confirm('Delete ALL data? This cannot be undone.')) return;
-        if (!confirm('Are you sure? Export your data first if needed.')) return;
-        await dbClear('guitars');
-        await dbClear('stringChanges');
-        await dbClear('setups');
-        render();
-    }
-
-    // ========== Init ==========
-    openDB().then(() => render());
-
-    // Register service worker
-    if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('sw.js');
-    }
+    // Service Worker
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
     </script>
 </body>
 </html>
