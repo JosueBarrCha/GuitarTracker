@@ -888,7 +888,7 @@
     let pendingPhotoFile = null;
 
     function previewPhoto(input, mode) {
-        const file = input.files;
+        const file = input.files[ 0 ];
         if (!file) return;
         pendingPhotoFile = file;
         const reader = new FileReader();
