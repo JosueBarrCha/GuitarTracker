@@ -1,0 +1,790 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="GuitarTrack">
+    <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🎸</text></svg>">
+    <link rel="manifest" href="manifest.json">
+    <title>Guitar Tracker</title>
+    <style>
+        :root {
+            --bg: #0d0d0d;
+            --surface: #1a1a1a;
+            --surface-2: #262626;
+            --accent: #ff6b35;
+            --accent-glow: rgba(255, 107, 53, 0.15);
+            --text: #f0f0f0;
+            --text-muted: #888;
+            --success: #34d399;
+            --warning: #fbbf24;
+            --danger: #f87171;
+            --border: #333;
+            --radius: 14px;
+            --safe-top: env(safe-area-inset-top);
+            --safe-bottom: env(safe-area-inset-bottom);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro', system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            padding-top: calc(var(--safe-top) + 10px);
+            padding-bottom: calc(var(--safe-bottom) + 80px);
+            -webkit-tap-highlight-color: transparent;
+            overscroll-behavior: none;
+        }
+
+        .app-header {
+            padding: 15px 20px;
+            text-align: center;
+        }
+
+        .app-header h1 {
+            font-size: 1.5rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        /* BOTTOM NAV */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--surface);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0 calc(var(--safe-bottom) + 8px);
+            z-index: 100;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.7rem;
+            cursor: pointer;
+            padding: 5px 15px;
+            transition: color 0.2s;
+        }
+
+        .nav-item.active { color: var(--accent); }
+        .nav-item span.icon { font-size: 1.4rem; }
+
+        /* PAGES */
+        .page { display: none; padding: 0 16px; }
+        .page.active { display: block; }
+
+        /* CARDS */
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .card-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .card-field {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .card-field .label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+        }
+
+        .card-field .value {
+            font-size: 0.9rem;
+            margin-top: 1px;
+        }
+
+        /* BADGES */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-fresh { background: rgba(52, 211, 153, 0.15); color: var(--success); }
+        .badge-due { background: rgba(251, 191, 36, 0.15); color: var(--warning); }
+        .badge-overdue { background: rgba(248, 113, 113, 0.15); color: var(--danger); }
+        .badge-none { background: var(--surface-2); color: var(--text-muted); }
+
+        /* BUTTONS */
+        .fab {
+            position: fixed;
+            bottom: calc(var(--safe-bottom) + 75px);
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: white;
+            border: none;
+            font-size: 1.8rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(255, 107, 53, 0.4);
+            cursor: pointer;
+            z-index: 50;
+        }
+
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: opacity 0.2s;
+        }
+
+        .btn:active { opacity: 0.7; }
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-secondary { background: var(--surface-2); color: var(--text); }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-small { padding: 6px 14px; width: auto; font-size: 0.8rem; border-radius: 8px; }
+
+        /* FORMS */
+        .sheet {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: var(--bg);
+            z-index: 200;
+            overflow-y: auto;
+            padding: 20px 16px calc(var(--safe-bottom) + 20px);
+            padding-top: calc(var(--safe-top) + 20px);
+        }
+
+        .sheet.active { display: block; }
+
+        .sheet-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+        }
+
+        .sheet-header h2 { font-size: 1.3rem; }
+
+        .sheet-close {
+            background: var(--surface-2);
+            border: none;
+            color: var(--text);
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            font-size: 1.1rem;
+            cursor: pointer;
+        }
+
+        .form-group { margin-bottom: 16px; }
+
+        .form-group label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 14px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 1rem;
+            -webkit-appearance: none;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px var(--accent-glow);
+        }
+
+        .form-group textarea { min-height: 80px; resize: vertical; }
+        .form-group select { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23888' viewBox='0 0 16 16'%3E%3Cpath d=[MAC_ADDRESS]z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        /* HISTORY */
+        .history-item {
+            background: var(--surface);
+            border-left: 3px solid var(--accent);
+            border-radius: 0 var(--radius) var(--radius) 0;
+            padding: 14px 16px;
+            margin-bottom: 10px;
+        }
+
+        .history-item .guitar-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .history-item .date {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        .history-item .detail {
+            margin-top: 6px;
+            font-size: 0.9rem;
+        }
+
+        .history-item .meta {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+
+        .swipe-delete {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 8px;
+        }
+
+        /* SETTINGS */
+        .settings-section {
+            margin-bottom: 20px;
+        }
+
+        .settings-section h3 {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 10px;
+        }
+
+        .settings-btn {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+            padding: 14px 16px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            color: var(--text);
+            font-size: 0.95rem;
+            cursor: pointer;
+            margin-bottom: 8px;
+        }
+
+        .settings-btn .s-icon { font-size: 1.2rem; }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--text-muted);
+        }
+
+        .empty-state .big-icon { font-size: 3rem; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+    <!-- PAGES -->
+    <div class="app-header"><h1>🎸 Guitar Tracker</h1></div>
+
+    <div id="page-guitars" class="page active"></div>
+    <div id="page-strings" class="page"></div>
+    <div id="page-setups" class="page"></div>
+    <div id="page-settings" class="page"></div>
+
+    <!-- FAB -->
+    <button class="fab" id="fab" onclick="handleFab()">+</button>
+
+    <!-- BOTTOM NAV -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" data-page="guitars"><span class="icon">🎸</span>Guitars</button>
+        <button class="nav-item" data-page="strings"><span class="icon">🎵</span>Strings</button>
+        <button class="nav-item" data-page="setups"><span class="icon">🔧</span>Setups</button>
+        <button class="nav-item" data-page="settings"><span class="icon">⚙️</span>Settings</button>
+    </nav>
+
+    <!-- SHEETS (Full-screen forms) -->
+    <div class="sheet" id="sheet-guitar">
+        <div class="sheet-header">
+            <h2 id="sheet-guitar-title">Add Guitar</h2>
+            <button class="sheet-close" onclick="closeSheet('sheet-guitar')">✕</button>
+        </div>
+        <input type="hidden" id="edit-guitar-id">
+        <div class="form-group"><label>Name *</label><input type="text" id="f-guitar-name" placeholder="e.g. Fender Stratocaster"></div>
+        <div class="form-row">
+            <div class="form-group"><label>Brand</label><input type="text" id="f-guitar-brand" placeholder="Fender"></div>
+            <div class="form-group"><label>Model</label><input type="text" id="f-guitar-model" placeholder="American Pro II"></div>
+        </div>
+        <div class="form-row">
+            <div class="form-group"><label>Year</label><input type="number" id="f-guitar-year" placeholder="2022"></div>
+            <div class="form-group"><label>Tuning</label><input type="text" id="f-guitar-tuning" placeholder="Standard E"></div>
+        </div>
+        <div class="form-group"><label>Notes</label><textarea id="f-guitar-notes" placeholder="Pickups, mods, serial number..."></textarea></div>
+        <button class="btn btn-primary" onclick="saveGuitar()">Save Guitar</button>
+    </div>
+
+    <div class="sheet" id="sheet-string">
+        <div class="sheet-header">
+            <h2>Log String Change</h2>
+            <button class="sheet-close" onclick="closeSheet('sheet-string')">✕</button>
+        </div>
+        <div class="form-group"><label>Guitar *</label><select id="f-str-guitar"></select></div>
+        <div class="form-group"><label>Date *</label><input type="date" id="f-str-date"></div>
+        <div class="form-group"><label>String Set *</label><input type="text" id="f-str-set" placeholder="e.g. Ernie Ball Regular Slinky 10-46"></div>
+        <div class="form-group"><label>Change after (days)</label><input type="number" id="f-str-life" placeholder="e.g. 30"></div>
+        <div class="form-group"><label>Notes</label><textarea id="f-str-notes" placeholder="Coated, bright tone, etc."></textarea></div>
+        <button class="btn btn-primary" onclick="saveStringChange()">Save</button>
+    </div>
+
+    <div class="sheet" id="sheet-setup">
+        <div class="sheet-header">
+            <h2>Log Setup / Service</h2>
+            <button class="sheet-close" onclick="closeSheet('sheet-setup')">✕</button>
+        </div>
+        <div class="form-group"><label>Guitar *</label><select id="f-setup-guitar"></select></div>
+        <div class="form-group"><label>Date *</label><input type="date" id="f-setup-date"></div>
+        <div class="form-group"><label>Service Type</label>
+            <select id="f-setup-type">
+                <option>Full Setup</option>
+                <option>Truss Rod Adjustment</option>
+                <option>Intonation</option>
+                <option>Action Adjustment</option>
+                <option>Fret Level / Crown</option>
+                <option>Electronics Repair</option>
+                <option>Nut Replacement</option>
+                <option>Pickup Swap</option>
+                <option>Other</option>
+            </select>
+        </div>
+        <div class="form-group"><label>Done by</label><input type="text" id="f-setup-by" placeholder="Self, local luthier, etc."></div>
+        <div class="form-group"><label>Details *</label><textarea id="f-setup-details" placeholder="What was done, measurements, etc."></textarea></div>
+        <button class="btn btn-primary" onclick="saveSetup()">Save</button>
+    </div>
+
+    <!-- Hidden file input for import -->
+    <input type="file" id="import-input" accept=".json" style="display:none">
+
+    <script>
+    // ========== IndexedDB Layer ==========
+    const DB_NAME = 'GuitarTrackerDB';
+    const DB_VERSION = 1;
+    let db;
+
+    function openDB() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, DB_VERSION);
+            request.onupgradeneeded = (e) => {
+                const db = e.target.result;
+                if (!db.objectStoreNames.contains('guitars')) db.createObjectStore('guitars', { keyPath: 'id' });
+                if (!db.objectStoreNames.contains('stringChanges')) db.createObjectStore('stringChanges', { keyPath: 'id' });
+                if (!db.objectStoreNames.contains('setups')) db.createObjectStore('setups', { keyPath: 'id' });
+            };
+            request.onsuccess = (e) => { db = e.target.result; resolve(db); };
+            request.onerror = (e) => reject(e);
+        });
+    }
+
+    function dbGetAll(store) {
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(store, 'readonly');
+            const req = tx.objectStore(store).getAll();
+            req.onsuccess = () => resolve(req.result);
+            req.onerror = () => reject(req.error);
+        });
+    }
+
+    function dbPut(store, item) {
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(store, 'readwrite');
+            const req = tx.objectStore(store).put(item);
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(req.error);
+        });
+    }
+
+    function dbDelete(store, id) {
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(store, 'readwrite');
+            const req = tx.objectStore(store).delete(id);
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(req.error);
+        });
+    }
+
+    function dbClear(store) {
+        return new Promise((resolve, reject) => {
+            const tx = db.transaction(store, 'readwrite');
+            const req = tx.objectStore(store).clear();
+            req.onsuccess = () => resolve();
+            req.onerror = () => reject(req.error);
+        });
+    }
+
+    // ========== Navigation ==========
+    let currentPage = 'guitars';
+
+    document.querySelectorAll('.nav-item').forEach(btn => {
+        btn.addEventListener('click', () => {
+            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+            currentPage = btn.dataset.page;
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById('page-' + currentPage).classList.add('active');
+            document.getElementById('fab').style.display = currentPage === 'settings' ? 'none' : 'flex';
+            render();
+        });
+    });
+
+    function handleFab() {
+        if (currentPage === 'guitars') openSheet('sheet-guitar', true);
+        else if (currentPage === 'strings') openSheet('sheet-string');
+        else if (currentPage === 'setups') openSheet('sheet-setup');
+    }
+
+    // ========== Sheets ==========
+    function openSheet(id, isNew) {
+        if (id === 'sheet-guitar' && isNew) {
+            document.getElementById('sheet-guitar-title').textContent = 'Add Guitar';
+            document.getElementById('edit-guitar-id').value = '';
+            document.getElementById('f-guitar-name').value = '';
+            document.getElementById('f-guitar-brand').value = '';
+            document.getElementById('f-guitar-model').value = '';
+            document.getElementById('f-guitar-year').value = '';
+            document.getElementById('f-guitar-tuning').value = '';
+            document.getElementById('f-guitar-notes').value = '';
+        }
+        if (id === 'sheet-string') {
+            populateGuitarSelect('f-str-guitar');
+            document.getElementById('f-str-date').value = todayStr();
+            document.getElementById('f-str-set').value = '';
+            document.getElementById('f-str-life').value = '';
+            document.getElementById('f-str-notes').value = '';
+        }
+        if (id === 'sheet-setup') {
+            populateGuitarSelect('f-setup-guitar');
+            document.getElementById('f-setup-date').value = todayStr();
+            document.getElementById('f-setup-type').value = 'Full Setup';
+            document.getElementById('f-setup-by').value = '';
+            document.getElementById('f-setup-details').value = '';
+        }
+        document.getElementById(id).classList.add('active');
+    }
+
+    function closeSheet(id) { document.getElementById(id).classList.remove('active'); }
+
+    function todayStr() { return new Date().toISOString().split('T')[0]; }
+
+    async function populateGuitarSelect(selectId) {
+        const guitars = await dbGetAll('guitars');
+        const sel = document.getElementById(selectId);
+        sel.innerHTML = guitars.length === 0
+            ? '<option value="">No guitars added</option>'
+            : guitars.map(g => `<option value="${g.id}">${g.name}</option>`).join('');
+    }
+
+    // ========== Save Functions ==========
+    async function saveGuitar() {
+        const name = document.getElementById('f-guitar-name').value.trim();
+        if (!name) return alert('Please enter a guitar name.');
+        const editId = document.getElementById('edit-guitar-id').value;
+        const guitar = {
+            id: editId || Date.now().toString(),
+            name,
+            brand: document.getElementById('f-guitar-brand').value.trim(),
+            model: document.getElementById('f-guitar-model').value.trim(),
+            year: document.getElementById('f-guitar-year').value.trim(),
+            tuning: document.getElementById('f-guitar-tuning').value.trim(),
+            notes: document.getElementById('f-guitar-notes').value.trim()
+        };
+        await dbPut('guitars', guitar);
+        closeSheet('sheet-guitar');
+        render();
+    }
+
+    async function saveStringChange() {
+        const guitarId = document.getElementById('f-str-guitar').value;
+        const date = document.getElementById('f-str-date').value;
+        const stringSet = document.getElementById('f-str-set').value.trim();
+        if (!guitarId || !date || !stringSet) return alert('Fill in all required fields.');
+        await dbPut('stringChanges', {
+            id: Date.now().toString(),
+            guitarId, date, stringSet,
+            lifespan: parseInt(document.getElementById('f-str-life').value) || null,
+            notes: document.getElementById('f-str-notes').value.trim()
+        });
+        closeSheet('sheet-string');
+        render();
+    }
+
+    async function saveSetup() {
+        const guitarId = document.getElementById('f-setup-guitar').value;
+        const date = document.getElementById('f-setup-date').value;
+        const details = document.getElementById('f-setup-details').value.trim();
+        if (!guitarId || !date || !details) return alert('Fill in all required fields.');
+        await dbPut('setups', {
+            id: Date.now().toString(),
+            guitarId, date,
+            type: document.getElementById('f-setup-type').value,
+            doneBy: document.getElementById('f-setup-by').value.trim(),
+            details
+        });
+        closeSheet('sheet-setup');
+        render();
+    }
+
+    // ========== Delete ==========
+    async function deleteGuitar(id) {
+        if (!confirm('Delete this guitar and all its history?')) return;
+        await dbDelete('guitars', id);
+        const strings = await dbGetAll('stringChanges');
+        const setups = await dbGetAll('setups');
+        for (const s of strings.filter(s => s.guitarId === id)) await dbDelete('stringChanges', s.id);
+        for (const s of setups.filter(s => s.guitarId === id)) await dbDelete('setups', s.id);
+        render();
+    }
+
+    async function deleteString(id) {
+        if (!confirm('Delete this entry?')) return;
+        await dbDelete('stringChanges', id);
+        render();
+    }
+
+    async function deleteSetup(id) {
+        if (!confirm('Delete this entry?')) return;
+        await dbDelete('setups', id);
+        render();
+    }
+
+    // ========== Edit Guitar ==========
+    async function editGuitar(id) {
+        const guitars = await dbGetAll('guitars');
+        const g = guitars.find(x => x.id === id);
+        if (!g) return;
+        document.getElementById('sheet-guitar-title').textContent = 'Edit Guitar';
+        document.getElementById('edit-guitar-id').value = g.id;
+        document.getElementById('f-guitar-name').value = g.name;
+        document.getElementById('f-guitar-brand').value = g.brand || '';
+        document.getElementById('f-guitar-model').value = g.model || '';
+        document.getElementById('f-guitar-year').value = g.year || '';
+        document.getElementById('f-guitar-tuning').value = g.tuning || '';
+        document.getElementById('f-guitar-notes').value = g.notes || '';
+        document.getElementById('sheet-guitar').classList.add('active');
+    }
+
+    // ========== String Status ==========
+    function getStringStatus(guitarId, allStrings) {
+        const changes = allStrings.filter(s => s.guitarId === guitarId).sort((a, b) => new Date(b.date) - new Date(a.date));
+        if (changes.length === 0) return { cls: 'badge-none', text: 'No data', stringSet: null };
+        const latest = changes[0];
+        if (!latest.lifespan) return { cls: 'badge-fresh', text: 'OK', stringSet: latest.stringSet, date: latest.date };
+        const due = new Date(latest.date);
+        due.setDate(due.getDate() + latest.lifespan);
+        const daysLeft = Math.ceil((due - new Date()) / 86400000);
+        if (daysLeft < 0) return { cls: 'badge-overdue', text: `${Math.abs(daysLeft)}d overdue`, stringSet: latest.stringSet, date: latest.date };
+        if (daysLeft <= 7) return { cls: 'badge-due', text: `${daysLeft}d left`, stringSet: latest.stringSet, date: latest.date };
+        return { cls: 'badge-fresh', text: `${daysLeft}d left`, stringSet: latest.stringSet, date: latest.date };
+    }
+
+    // ========== Render ==========
+    async function render() {
+        const guitars = await dbGetAll('guitars');
+        const strings = await dbGetAll('stringChanges');
+        const setups = await dbGetAll('setups');
+
+        // Guitars page
+        const gPage = document.getElementById('page-guitars');
+        if (guitars.length === 0) {
+            gPage.innerHTML = '<div class="empty-state"><div class="big-icon">🎸</div><p>No guitars yet.<br>Tap + to add one.</p></div>';
+        } else {
+            gPage.innerHTML = guitars.map(g => {
+                const ss = getStringStatus(g.id, strings);
+                const lastSetup = setups.filter(s => s.guitarId === g.id).sort((a,b) => new Date(b.date) - new Date(a.date))[0];
+                return `<div class="card">
+                    <div class="card-header">
+                        <span class="card-title">${g.name}</span>
+                        <span class="badge ${ss.cls}">${ss.text}</span>
+                    </div>
+                    <div class="card-grid">
+                        ${g.brand ? `<div class="card-field"><span class="label">Brand</span><span class="value">${g.brand}</span></div>` : ''}
+                        ${g.model ? `<div class="card-field"><span class="label">Model</span><span class="value">${g.model}</span></div>` : ''}
+                        ${g.tuning ? `<div class="card-field"><span class="label">Tuning</span><span class="value">${g.tuning}</span></div>` : ''}
+                        ${ss.stringSet ? `<div class="card-field"><span class="label">Current Strings</span><span class="value">${ss.stringSet}</span></div>` : ''}
+                        <div class="card-field"><span class="label">Last Setup</span><span class="value">${lastSetup ? `${lastSetup.date} · ${lastSetup.type}` : '—'}</span></div>
+                    </div>
+                    <div style="display:flex;gap:8px;margin-top:12px">
+                        <button class="btn btn-secondary btn-small" onclick="editGuitar('${g.id}')">Edit</button>
+                        <button class="btn btn-danger btn-small" onclick="deleteGuitar('${g.id}')">Delete</button>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        // Strings page
+        const sPage = document.getElementById('page-strings');
+        const sortedStrings = [...strings].sort((a,b) => new Date(b.date) - new Date(a.date));
+        if (sortedStrings.length === 0) {
+            sPage.innerHTML = '<div class="empty-state"><div class="big-icon">🎵</div><p>No string changes logged yet.</p></div>';
+        } else {
+            sPage.innerHTML = sortedStrings.map(s => {
+                const g = guitars.find(x => x.id === s.guitarId);
+                return `<div class="history-item">
+                    <div class="guitar-name">${g ? g.name : 'Unknown'}</div>
+                    <div class="date">${s.date}</div>
+                    <div class="detail">🎵 ${s.stringSet}</div>
+                    ${s.lifespan ? `<div class="meta">⏱ Change after ${s.lifespan} days</div>` : ''}
+                    ${s.notes ? `<div class="meta">${s.notes}</div>` : ''}
+                    <div class="swipe-delete"><button class="btn btn-danger btn-small" onclick="deleteString('${s.id}')">Delete</button></div>
+                </div>`;
+            }).join('');
+        }
+
+        // Setups page
+        const uPage = document.getElementById('page-setups');
+        const sortedSetups = [...setups].sort((a,b) => new Date(b.date) - new Date(a.date));
+        if (sortedSetups.length === 0) {
+            uPage.innerHTML = '<div class="empty-state"><div class="big-icon">🔧</div><p>No setups logged yet.</p></div>';
+        } else {
+            uPage.innerHTML = sortedSetups.map(s => {
+                const g = guitars.find(x => x.id === s.guitarId);
+                return `<div class="history-item">
+                    <div class="guitar-name">${g ? g.name : 'Unknown'}</div>
+                    <div class="date">${s.date} · ${s.type}</div>
+                    ${s.doneBy ? `<div class="meta">Done by: ${s.doneBy}</div>` : ''}
+                    <div class="detail">${s.details}</div>
+                    <div class="swipe-delete"><button class="btn btn-danger btn-small" onclick="deleteSetup('${s.id}')">Delete</button></div>
+                </div>`;
+            }).join('');
+        }
+
+        // Settings page
+        document.getElementById('page-settings').innerHTML = `
+            <div class="settings-section">
+                <h3>Data Backup</h3>
+                <button class="settings-btn" onclick="exportData()"><span class="s-icon">📤</span> Export Data (JSON)</button>
+                <button class="settings-btn" onclick="document.getElementById('import-input').click()"><span class="s-icon">📥</span> Import Data (JSON)</button>
+            </div>
+            <div class="settings-section">
+                <h3>Danger Zone</h3>
+                <button class="settings-btn" onclick="clearAllData()" style="border-color:var(--danger)"><span class="s-icon">🗑️</span> Delete All Data</button>
+            </div>
+            <div class="settings-section">
+                <h3>About</h3>
+                <div class="card">
+                    <p style="font-size:0.85rem;color:var(--text-muted)">Guitar Tracker PWA<br>Data stored locally via IndexedDB.<br>Use Export to back up your data regularly.</p>
+                </div>
+            </div>
+        `;
+    }
+
+    // ========== Export / Import ==========
+    async function exportData() {
+        const data = {
+            guitars: await dbGetAll('guitars'),
+            stringChanges: await dbGetAll('stringChanges'),
+            setups: await dbGetAll('setups'),
+            exportDate: new Date().toISOString()
+        };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `guitar-tracker-backup-${todayStr()}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+    }
+
+    document.getElementById('import-input').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        try {
+            const text = await file.text();
+            const data = JSON.parse(text);
+            if (!data.guitars || !data.stringChanges || !data.setups) throw new Error('Invalid format');
+            if (!confirm(`Import ${data.guitars.length} guitars, ${data.stringChanges.length} string changes, and ${data.setups.length} setups? This will REPLACE all current data.`)) return;
+            await dbClear('guitars');
+            await dbClear('stringChanges');
+            await dbClear('setups');
+            for (const g of data.guitars) await dbPut('guitars', g);
+            for (const s of data.stringChanges) await dbPut('stringChanges', s);
+            for (const s of data.setups) await dbPut('setups', s);
+            render();
+            alert('Import complete!');
+        } catch (err) {
+            alert('Failed to import: ' + err.message);
+        }
+        e.target.value = '';
+    });
+
+    async function clearAllData() {
+        if (!confirm('Delete ALL data? This cannot be undone.')) return;
+        if (!confirm('Are you sure? Export your data first if needed.')) return;
+        await dbClear('guitars');
+        await dbClear('stringChanges');
+        await dbClear('setups');
+        render();
+    }
+
+    // ========== Init ==========
+    openDB().then(() => render());
+
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js');
+    }
+    </script>
+</body>
+</html>
+
