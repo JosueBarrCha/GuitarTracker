@@ -888,13 +888,13 @@
     let pendingPhotoFile = null;
 
     function previewPhoto(input, mode) {
-        const file = input.files[];
+        const file = input.files;
         if (!file) return;
         pendingPhotoFile = file;
         const reader = new FileReader();
         reader.onload = (e) => {
-            const preview = document.getElementById(`photo-preview-${mode}`);
-            const placeholder = document.getElementById(`photo-placeholder-${mode}`);
+            const preview = document.getElementById('photo-preview-' + mode);
+            const placeholder = document.getElementById('photo-placeholder-' + mode);
             preview.src = e.target.result;
             preview.style.display = 'block';
             placeholder.style.display = 'none';
