@@ -1294,6 +1294,7 @@
         renderSettings();
     }
 
+    
     function renderGuitars() {
         const isMobile = window.innerWidth <= 768;
 
@@ -1304,4 +1305,144 @@
                 const lastSetup = setups.filter(s => s.guitarId === g.id)[0];
                 const photoHtml = g.photoURL
                     ? `<img class="guitar-photo" src="${g.photoURL}" alt="${g.name}">`
-                    : `<div class
+                    : `<div class="guitar-photo-placeholder">🎸</div>`;
+                return `<div class="card">
+                    <div class="card-header">
+                        <span class="card-title">${g.name}</span>
+                        <span class="badge ${ss.cls}">${ss.text}</span>
+                    </div>
+                    <div class="guitar-card-content">
+                        ${photoHtml}
+                        <div class="guitar-card-info">
+                            <div class="card-grid">
+                                ${g.brand ? `<div class="card-field"><span class="label">Brand</span><span class="value">${g.brand}</span></div>` : ''}
+                                ${g.model ? `<div class="card-field"><span class="label">Model</span><span class="value">${g.model}</span></div>` : ''}
+                                ${g.tuning ? `<div class="card-field"><span class="label">Tuning</span><span class="value">${g.tuning}</span></div>` : ''}
+                                ${ss.stringSet ? `<div class="card-field"><span class="label">Current Strings</span><span class="value">${ss.stringSet}</span></div>` : ''}
+                                <div class="card-field"><span class="label">Last Setup</span><span class="value">${lastSetup ? `${lastSetup.date} · ${lastSetup.type}` : '—'}</span></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-secondary btn-small" onclick="${isMobile ? `editGuitarMobile('${g.id}')` : `editGuitarDesktop('${g.id}')`}">Edit</button>
+                        <button class="btn btn-danger btn-small" onclick="deleteGuitar('${g.id}')">Delete</button>
+                    </div>
+                </div>`;
+            }).join('');
+
+        document.getElementById('m-page-guitars').innerHTML = html;
+        document.getElementById('d-page-guitars').innerHTML = `
+            <h2>My Guitars</h2>
+            <p class="subtitle">${guitars.length} guitar${guitars.length !== 1 ? 's' : ''} in your collection</p>
+            <button class="desktop-add-btn" onclick="openModal('modal-guitar', true)">+ Add Guitar</button>
+            ${html}
+        `;
+    }
+
+    function renderStrings() {
+        const html = stringChanges.length === 0
+            ? '<div class="empty-state"><div class="big-icon">🎵</div><p>No string changes logged yet.</p></div>'
+            : stringChanges.map(s => {
+                const g = guitars.find(x => x.id === s.guitarId);
+                return `<div class="history-item">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span class="guitar-name">${g ? g.name : 'Unknown'}</span>
+                        <button class="btn btn-danger btn-small" onclick="deleteStringChange('${s.id}')">✕</button>
+                    </div>
+                    <div class="date">${s.date}</div>
+                    <div class="detail">🎵 ${s.stringSet}</div>
+                    ${s.lifespan ? `<div class="meta">⏱ Change after ${s.lifespan} days</div>` : ''}
+                    ${s.notes ? `<div class="meta">${s.notes}</div>` : ''}
+                </div>`;
+            }).join('');
+
+        document.getElementById('m-page-strings').innerHTML = html;
+        document.getElementById('d-page-strings').innerHTML = `
+            <h2>String Changes</h2>
+            <p class="subtitle">${stringChanges.length} entries</p>
+            <button class="desktop-add-btn" onclick="openModal('modal-string')">+ Log String Change</button>
+            ${html}
+        `;
+    }
+
+    function renderSetups() {
+        const html = setups.length === 0
+            ? '<div class="empty-state"><div class="big-icon">🔧</div><p>No setups logged yet.</p></div>'
+            : setups.map(s => {
+                const g = guitars.find(x => x.id === s.guitarId);
+                return `<div class="history-item">
+                    <div style="display:flex;justify-content:space-between;align-items:center">
+                        <span class="guitar-name">${g ? g.name : 'Unknown'}</span>
+                        <button class="btn btn-danger btn-small" onclick="deleteSetup('${s.id}')">✕</button>
+                    </div>
+                    <div class="date">${s.date} · ${s.type}</div>
+                    ${s.doneBy ? `<div class="meta">Done by: ${s.doneBy}</div>` : ''}
+                    <div class="detail">${s.details}</div>
+                </div>`;
+            }).join('');
+
+        document.getElementById('m-page-setups').innerHTML = html;
+        document.getElementById('d-page-setups').innerHTML = `
+            <h2>Setups & Service</h2>
+            <p class="subtitle">${setups.length} entries</p>
+            <button class="desktop-add-btn" onclick="openModal('modal-setup')">+ Log Setup</button>
+            ${html}
+        `;
+    }
+
+    function renderSettings() {
+        const settingsHtml = `
+            <div class="settings-section">
+                <h3>Data</h3>
+                <button class="settings-btn" onclick="exportData()"><span class="s-icon">📤</span> Export Backup (JSON)</button>
+                <button class="settings-btn" onclick="document.getElementById('import-input').click()"><span class="s-icon">📥</span> Import Backup</button>
+            </div>
+            <div class="settings-section">
+                <h3>Account</h3>
+                <button class="settings-btn" onclick="signOut()"><span class="s-icon">🚪</span> Sign Out</button>
+            </div>
+        `;
+        document.getElementById('m-page-settings').innerHTML = settingsHtml;
+        document.getElementById('d-page-settings').innerHTML = `<h2>Settings</h2><p class="subtitle">Manage your data and account</p>${settingsHtml}`;
+    }
+
+    // ============================================================
+    // EXPORT / IMPORT
+    // ============================================================
+    function exportData() {
+        const data = { guitars, stringChanges, setups, exportDate: new Date().toISOString() };
+        const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `guitar-tracker-${todayStr()}.json`;
+        a.click();
+    }
+
+    document.getElementById('import-input').addEventListener('change', async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        try {
+            const text = await file.text();
+            const data = JSON.parse(text);
+            if (!confirm(`Import ${data.guitars?.length || 0} guitars, ${data.stringChanges?.length || 0} string changes, ${data.setups?.length || 0} setups? This REPLACES current data.`)) return;
+
+            const gSnap = await userCol('guitars').get();
+            const sSnap = await userCol('stringChanges').get();
+            const uSnap = await userCol('setups').get();
+            const batch = firestore.batch();
+            gSnap.docs.forEach(d => batch.delete(d.ref));
+            sSnap.docs.forEach(d => batch.delete(d.ref));
+            uSnap.docs.forEach(d => batch.delete(d.ref));
+            await batch.commit();
+
+            for (const g of (data.guitars || [])) { const { id, ...rest } = g; await userCol('guitars').add(rest); }
+            for (const s of (data.stringChanges || [])) { const { id, ...rest } = s; await userCol('stringChanges').add(rest); }
+            for (const s of (data.setups || [])) { const { id, ...rest } = s; await userCol('setups').add(rest); }
+            alert('Import complete!');
+        } catch (err) { alert('Import failed: ' + err.message); }
+        e.target.value = '';
+    });
+
+    // Service Worker
+    if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+
