@@ -660,6 +660,16 @@
         if (confirm('Sign out?')) auth.signOut();
     }
 
+    // Capturar resultado del redirect (para mobile)
+    auth.getRedirectResult().then(result => {
+        if (result && result.user) {
+            console.log('Redirect sign-in successful');
+        }
+    }).catch(err => {
+        console.error('Redirect error:', err);
+    });
+
+        
     auth.onAuthStateChanged(user => {
         if (user) {
             currentUser = user;
