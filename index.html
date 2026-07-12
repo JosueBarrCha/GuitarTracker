@@ -650,12 +650,20 @@
     // AUTH
     // ============================================================
     function signIn() {
-        const provider = new firebase.auth.GoogleAuthProvider();
+    const provider = new firebase.auth.GoogleAuthProvider();
+    // En mobile usar redirect, en desktop usar popup
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) {
+        auth.signInWithRedirect(provider);
+    } else {
         auth.signInWithPopup(provider).catch(err => {
-            // Fallback for mobile
+            console.error('Popup failed:', err);
+            // Si el popup falla, intentar redirect
             auth.signInWithRedirect(provider);
         });
     }
+}
+
 
     function signOut() {
         if (confirm('Sign out?')) auth.signOut();
