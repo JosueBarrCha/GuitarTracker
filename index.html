@@ -902,6 +902,7 @@
         reader.readAsDataURL(file);
     }
 
+
     async function uploadPhoto(guitarId) {
         if (!pendingPhotoFile) return null;
         const compressed = await compressImage(pendingPhotoFile, 600, 0.6);
