@@ -656,9 +656,16 @@
 
 
 
-    function signOut() {
-        if (confirm('Sign out?')) auth.signOut();
-    }
+    function signIn() {
+    const provider = new firebase.auth.GoogleAuthProvider();
+    auth.signInWithPopup(provider).then(result => {
+        console.log('Sign in success:', result.user.email);
+    }).catch(err => {
+        console.error('Sign in error:', err);
+        alert('Error: ' + err.message);
+    });
+}
+
 
     // Capturar resultado del redirect (para mobile)
     auth.getRedirectResult().then(result => {
