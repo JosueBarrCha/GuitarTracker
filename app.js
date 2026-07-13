@@ -744,69 +744,66 @@ function exportGuitarPDF(guitarId) {
 
     Swal.fire({ title: 'Generating PDF...', background: '#1a1a1a', color: '#f0f0f0', allowOutsideClick: false, didOpen: function() { Swal.showLoading(); } });
 
-    // Build PDF HTML
     var photoHtml = g.photoURL
-        ? '<img class="pdf-photo" src="' + g.photoURL + '" alt="' + g.name + '">'
+        ? '<img style="width:100%;max-height:200px;object-fit:cover;border-radius:8px;margin-bottom:16px;" src="' + g.photoURL + '">'
         : '';
 
     var specsHtml = '';
-    if (g.brand) specsHtml += '<div class="pdf-spec"><div class="label">Brand</div><div class="value">' + g.brand + '</div></div>';
-    if (g.model) specsHtml += '<div class="pdf-spec"><div class="label">Model</div><div class="value">' + g.model + '</div></div>';
-    if (g.year) specsHtml += '<div class="pdf-spec"><div class="label">Year</div><div class="value">' + g.year + '</div></div>';
-    if (g.tuning) specsHtml += '<div class="pdf-spec"><div class="label">Tuning</div><div class="value">' + g.tuning + '</div></div>';
-    if (ss.stringSet) specsHtml += '<div class="pdf-spec"><div class="label">Current Strings</div><div class="value">' + ss.stringSet + '</div></div>';
+    if (g.brand) specsHtml += '<div style="background:#f5f5f5;padding:10px;border-radius:6px;"><div style="font-size:10px;text-transform:uppercase;color:#666;">Brand</div><div style="font-size:14px;font-weight:600;">' + g.brand + '</div></div>';
+    if (g.model) specsHtml += '<div style="background:#f5f5f5;padding:10px;border-radius:6px;"><div style="font-size:10px;text-transform:uppercase;color:#666;">Model</div><div style="font-size:14px;font-weight:600;">' + g.model + '</div></div>';
+    if (g.year) specsHtml += '<div style="background:#f5f5f5;padding:10px;border-radius:6px;"><div style="font-size:10px;text-transform:uppercase;color:#666;">Year</div><div style="font-size:14px;font-weight:600;">' + g.year + '</div></div>';
+    if (g.tuning) specsHtml += '<div style="background:#f5f5f5;padding:10px;border-radius:6px;"><div style="font-size:10px;text-transform:uppercase;color:#666;">Tuning</div><div style="font-size:14px;font-weight:600;">' + g.tuning + '</div></div>';
+    if (ss.stringSet) specsHtml += '<div style="background:#f5f5f5;padding:10px;border-radius:6px;"><div style="font-size:10px;text-transform:uppercase;color:#666;">Current Strings</div><div style="font-size:14px;font-weight:600;">' + ss.stringSet + '</div></div>';
+    specsHtml += '<div style="background:#f5f5f5;padding:10px;border-radius:6px;"><div style="font-size:10px;text-transform:uppercase;color:#666;">String Status</div><div style="font-size:14px;font-weight:600;">' + ss.text + '</div></div>';
 
-    var statusBadgeClass = 'pdf-badge-fresh';
-    if (ss.cls === 'badge-due') statusBadgeClass = 'pdf-badge-due';
-    if (ss.cls === 'badge-overdue') statusBadgeClass = 'pdf-badge-overdue';
-    specsHtml += '<div class="pdf-spec"><div class="label">String Status</div><div class="value"><span class="pdf-status-badge ' + statusBadgeClass + '">' + ss.text + '</span></div></div>';
-
-    // String changes table
     var stringsTableHtml = '';
     if (guitarStrings.length > 0) {
-        stringsTableHtml = '<div class="pdf-section"><h2>🎵 String Change History</h2><table class="pdf-table"><tr><th>Date</th><th>String Set</th><th>Lifespan</th><th>Notes</th></tr>';
+        stringsTableHtml = '<div style="margin-bottom:16px;"><h2 style="font-size:14px;text-transform:uppercase;color:#ff6b35;border-bottom:1px solid #ddd;padding-bottom:4px;margin-bottom:8px;">🎵 String Change History</h2><table style="width:100%;border-collapse:collapse;font-size:11px;"><tr style="background:#f0f0f0;"><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #ddd;">Date</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #ddd;">String Set</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #ddd;">Lifespan</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #ddd;">Notes</th></tr>';
         guitarStrings.forEach(function(s) {
-            stringsTableHtml += '<tr><td>' + s.date + '</td><td>' + s.stringSet + '</td><td>' + (s.lifespan ? s.lifespan + ' days' : '—') + '</td><td>' + (s.notes || '—') + '</td></tr>';
+            stringsTableHtml += '<tr><td style="padding:6px 8px;border-bottom:1px solid #eee;">' + s.date + '</td><td style="padding:6px 8px;border-bottom:1px solid #eee;">' + s.stringSet + '</td><td style="padding:6px 8px;border-bottom:1px solid #eee;">' + (s.lifespan ? s.lifespan + ' days' : '—') + '</td><td style="padding:6px 8px;border-bottom:1px solid #eee;">' + (s.notes || '—') + '</td></tr>';
         });
         stringsTableHtml += '</table></div>';
     }
 
-    // Setups table
     var setupsTableHtml = '';
     if (guitarSetups.length > 0) {
-        setupsTableHtml = '<div class="pdf-section"><h2>🔧 Setup & Service History</h2><table class="pdf-table"><tr><th>Date</th><th>Type</th><th>Done By</th><th>Details</th></tr>';
+        setupsTableHtml = '<div style="margin-bottom:16px;"><h2 style="font-size:14px;text-transform:uppercase;color:#ff6b35;border-bottom:1px solid #ddd;padding-bottom:4px;margin-bottom:8px;">🔧 Setup & Service History</h2><table style="width:100%;border-collapse:collapse;font-size:11px;"><tr style="background:#f0f0f0;"><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #ddd;">Date</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #ddd;">Type</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #ddd;">Done By</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #ddd;">Details</th></tr>';
         guitarSetups.forEach(function(s) {
-            setupsTableHtml += '<tr><td>' + s.date + '</td><td>' + s.type + '</td><td>' + (s.doneBy || '—') + '</td><td>' + s.details + '</td></tr>';
+            setupsTableHtml += '<tr><td style="padding:6px 8px;border-bottom:1px solid #eee;">' + s.date + '</td><td style="padding:6px 8px;border-bottom:1px solid #eee;">' + s.type + '</td><td style="padding:6px 8px;border-bottom:1px solid #eee;">' + (s.doneBy || '—') + '</td><td style="padding:6px 8px;border-bottom:1px solid #eee;">' + s.details + '</td></tr>';
         });
         setupsTableHtml += '</table></div>';
     }
 
-    var notesHtml = g.notes ? '<div class="pdf-section"><h2>📝 Notes</h2><p style="font-size:12px;color:#333;">' + g.notes + '</p></div>' : '';
+    var notesHtml = g.notes ? '<div style="margin-bottom:16px;"><h2 style="font-size:14px;text-transform:uppercase;color:#ff6b35;border-bottom:1px solid #ddd;padding-bottom:4px;margin-bottom:8px;">📝 Notes</h2><p style="font-size:12px;color:#333;">' + g.notes + '</p></div>' : '';
 
     var today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
 
-    var pdfHtml = '<div class="pdf-sheet" id="pdf-render-area">' +
-        '<div class="pdf-header"><h1>' + g.name + '</h1><div class="pdf-logo">🎸 Guitar Tracker</div></div>' +
+    var pdfHtml = '<div style="width:210mm;padding:20mm;background:#ffffff;color:#111111;font-family:Helvetica,Arial,sans-serif;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #ff6b35;padding-bottom:12px;margin-bottom:20px;"><h1 style="font-size:24px;margin:0;">' + g.name + '</h1><div style="font-size:14px;color:#666;">🎸 Guitar Tracker</div></div>' +
         photoHtml +
-        '<div class="pdf-specs-grid">' + specsHtml + '</div>' +
+        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;">' + specsHtml + '</div>' +
         stringsTableHtml +
         setupsTableHtml +
         notesHtml +
-        '<div class="pdf-footer">Generated by Guitar Tracker · ' + today + '</div>' +
+        '<div style="margin-top:20px;padding-top:10px;border-top:1px solid #ddd;font-size:10px;color:#999;text-align:center;">Generated by Guitar Tracker · ' + today + '</div>' +
         '</div>';
 
-    // Append to body temporarily
     var container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.top = '0';
+    container.style.left = '0';
+    container.style.zIndex = '-1';
+    container.style.opacity = '1';
     container.innerHTML = pdfHtml;
     document.body.appendChild(container);
 
-    var element = document.getElementById('pdf-render-area');
+    var element = container.firstChild;
 
     var opt = {
         margin: 0,
         filename: g.name.replace(/\s+/g, '-').toLowerCase() + '-technical-sheet.pdf',
-        image: { type: 'jpeg', quality: 0.95 },
-        html2canvas: { scale: 2, useCORS: true },
+        image: { type: 'jpeg', quality: 0.9 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
     };
 
@@ -818,6 +815,7 @@ function exportGuitarPDF(guitarId) {
         Swal.fire({ icon: 'error', title: 'PDF Error', text: err.message, background: '#1a1a1a', color: '#f0f0f0' });
     });
 }
+
 
 
 
