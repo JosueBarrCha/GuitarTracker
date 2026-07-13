@@ -800,6 +800,23 @@ function renderSetups() {
     allFilters.forEach(function(el) { el.value = filterValue; });
 }
 
+function renderSettings() {
+    var settingsHtml =
+        '<div class="settings-section">' +
+        '<h3>Data</h3>' +
+        '<button class="settings-btn" onclick="exportData()"><span class="s-icon">📤</span> Export Backup (JSON)</button>' +
+        '<button class="settings-btn" onclick="document.getElementById(\'import-input\').click()"><span class="s-icon">📥</span> Import Backup</button>' +
+        '</div>' +
+        '<div class="settings-section">' +
+        '<h3>Account</h3>' +
+        '<button class="settings-btn" onclick="signOut()"><span class="s-icon">🚪</span> Sign Out</button>' +
+        '</div>';
+
+    document.getElementById('m-page-settings').innerHTML = settingsHtml;
+    document.getElementById('d-page-settings').innerHTML = '<h2>Settings</h2><p class="subtitle">Manage your data and account</p>' + settingsHtml;
+}
+
+
 // ================================================================
 // EXPORT / IMPORT
 // ================================================================
