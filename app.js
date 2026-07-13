@@ -175,9 +175,24 @@ document.querySelectorAll('.sidebar-item').forEach(btn => {
 
 function handleFab() {
     if (currentPage === 'guitars') openSheet('sheet-guitar', true);
-    else if (currentPage === 'strings') openSheet('sheet-string');
+    else if (currentPage === 'strings') {
+        Swal.fire({
+            title: 'What do you want to add?',
+            showCancelButton: true,
+            confirmButtonText: '🎵 String Change',
+            cancelButtonText: '📦 String Pack',
+            confirmButtonColor: '#ff6b35',
+            cancelButtonColor: '#333',
+            background: '#1a1a1a',
+            color: '#f0f0f0'
+        }).then(function(result) {
+            if (result.isConfirmed) openSheet('sheet-string');
+            else if (result.dismiss === Swal.DismissReason.cancel) openSheet('sheet-inventory');
+        });
+    }
     else if (currentPage === 'setups') openSheet('sheet-setup');
 }
+
 
 // ================================================================
 // SHEETS & MODALS
@@ -1081,6 +1096,8 @@ function renderStrings() {
         '<h2>String Changes</h2>' +
         '<p class="subtitle">' + stringChanges.length + ' entries</p>' +
         '<button class="desktop-add-btn" onclick="openModal(\'modal-string\')">+ Log String Change</button>' +
+        '<button class="desktop-add-btn" onclick="openModal(\'modal-string\')">+ Log String Change</button>' +
+'<button class="desktop-add-btn" style="background:var(--surface);border:1px solid var(--border);color:var(--text);margin-left:8px;" onclick="openModal(\'modal-inventory\')">📦 Add String Pack</button>' +
         filterHtml + html;
 
     // Restore filter value after re-render
