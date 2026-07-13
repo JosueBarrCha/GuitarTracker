@@ -635,15 +635,19 @@ body {
 
 /* ===== GUITAR DETAIL VIEW ===== */
 .detail-photo {
-    width: 100%;
-    max-height: 250px;
-    object-fit: cover;
+    display: block;
+    margin: 0 auto 16px;
+    width: auto;
+    max-width: 100%;
+    max-height: 300px;
+    object-fit: contain;
     border-radius: var(--radius);
-    margin-bottom: 16px;
 }
+
 
 .detail-photo-placeholder {
     width: 100%;
+    max-width: 300px;
     height: 150px;
     background: var(--surface-2);
     border-radius: var(--radius);
@@ -651,8 +655,9 @@ body {
     align-items: center;
     justify-content: center;
     font-size: 4rem;
-    margin-bottom: 16px;
+    margin: 0 auto 16px;
 }
+
 
 .detail-section {
     margin-bottom: 20px;
