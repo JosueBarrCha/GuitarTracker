@@ -234,13 +234,18 @@ function populateSelect(selId) {
 // ================================================================
 async function saveGuitar() {
     const name = document.getElementById('f-guitar-name').value.trim();
-    if (!name) return alert('Enter a guitar name.');
+    if (!name) return Swal.fire({ icon: 'warning', title: 'Missing name', text: 'Enter a guitar name.', background: '#1a1a1a', color: '#f0f0f0' });
     const editId = document.getElementById('edit-guitar-id').value;
     const guitarId = editId || userCol('guitars').doc().id;
 
     let photoURL = document.getElementById('edit-guitar-photo-url').value || null;
+
     if (pendingPhotoFile) {
+        Swal.fire({ title: 'Uploading photo...', text: 'Compressing and saving...', background: '#1a1a1a', color: '#f0f0f0', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
         photoURL = await uploadPhoto(guitarId);
+        Swal.fire({ title: 'Saving guitar...', text: 'Almost done...', background: '#1a1a1a', color: '#f0f0f0', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+    } else {
+        Swal.fire({ title: 'Saving...', background: '#1a1a1a', color: '#f0f0f0', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
     }
 
     const data = {
@@ -253,38 +258,59 @@ async function saveGuitar() {
         photoURL: photoURL
     };
 
-    await userCol('guitars').doc(guitarId).set(data);
-    closeSheet('sheet-guitar');
+    try {
+        await userCol('guitars').doc(guitarId).set(data);
+        closeSheet('sheet-guitar');
+        Swal.fire({ icon: 'success', title: 'Guitar saved!', timer: 1500, showConfirmButton: false, background: '#1a1a1a', color: '#f0f0f0' });
+    } catch (err) {
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message, background: '#1a1a1a', color: '#f0f0f0' });
+    }
 }
 
 async function saveStringChange() {
     const guitarId = document.getElementById('f-str-guitar').value;
     const date = document.getElementById('f-str-date').value;
     const stringSet = document.getElementById('f-str-set').value.trim();
-    if (!guitarId || !date || !stringSet) return alert('Fill required fields.');
-    await userCol('stringChanges').add({
-        guitarId: guitarId,
-        date: date,
-        stringSet: stringSet,
-        lifespan: parseInt(document.getElementById('f-str-life').value) || null,
-        notes: document.getElementById('f-str-notes').value.trim()
-    });
-    closeSheet('sheet-string');
+    if (!guitarId || !date || !stringSet) return Swal.fire({ icon: 'warning', title: 'Missing fields', text: 'Fill all required fields.', background: '#1a1a1a', color: '#f0f0f0' });
+
+    Swal.fire({ title: 'Saving...', background: '#1a1a1a', color: '#f0f0f0', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+    try {
+        await userCol('stringChanges').add({
+            guitarId: guitarId,
+            date: date,
+            stringSet: stringSet,
+            lifespan: parseInt(document.getElementById('f-str-life').value) || null,
+            notes: document.getElementById('f-str-notes').value.trim()
+        });
+        closeSheet('sheet-string');
+        Swal.fire({ icon: 'success', title: 'String change saved!', timer: 1500, showConfirmButton: false, background: '#1a1a1a', color: '#f0f0f0' });
+    } catch (err) {
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message, background: '#1a1a1a', color: '#f0f0f0' });
+    }
 }
 
 async function saveSetup() {
     const guitarId = document.getElementById('f-setup-guitar').value;
     const date = document.getElementById('f-setup-date').value;
     const details = document.getElementById('f-setup-details').value.trim();
-    if (!guitarId || !date || !details) return alert('Fill required fields.');
-    await userCol('setups').add({
-        guitarId: guitarId,
-        date: date,
-        type: document.getElementById('f-setup-type').value,
-        doneBy: document.getElementById('f-setup-by').value.trim(),
-        details: details
-    });
-    closeSheet('sheet-setup');
+    if (!guitarId || !date || !details) return Swal.fire({ icon: 'warning', title: 'Missing fields', text: 'Fill all required fields.', background: '#1a1a1a', color: '#f0f0f0' });
+
+    Swal.fire({ title: 'Saving...', background: '#1a1a1a', color: '#f0f0f0', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+    try {
+        await userCol('setups').add({
+            guitarId: guitarId,
+            date: date,
+            type: document.getElementById('f-setup-type').value,
+            doneBy: document.getElementById('f-setup-by').value.trim(),
+            details: details
+        });
+        closeSheet('sheet-setup');
+        Swal.fire({ icon: 'success', title: 'Setup saved!', timer: 1500, showConfirmButton: false, background: '#1a1a1a', color: '#f0f0f0' });
+    } catch (err) {
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message, background: '#1a1a1a', color: '#f0f0f0' });
+    }
 }
 
 // ================================================================
@@ -292,13 +318,18 @@ async function saveSetup() {
 // ================================================================
 async function saveGuitarDesktop() {
     const name = document.getElementById('mf-guitar-name').value.trim();
-    if (!name) return alert('Enter a guitar name.');
+    if (!name) return Swal.fire({ icon: 'warning', title: 'Missing name', text: 'Enter a guitar name.', background: '#1a1a1a', color: '#f0f0f0' });
     const editId = document.getElementById('mf-guitar-id').value;
     const guitarId = editId || userCol('guitars').doc().id;
 
     let photoURL = document.getElementById('mf-guitar-photo-url').value || null;
+
     if (pendingPhotoFile) {
+        Swal.fire({ title: 'Uploading photo...', text: 'Compressing and saving...', background: '#1a1a1a', color: '#f0f0f0', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
         photoURL = await uploadPhoto(guitarId);
+        Swal.fire({ title: 'Saving guitar...', text: 'Almost done...', background: '#1a1a1a', color: '#f0f0f0', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+    } else {
+        Swal.fire({ title: 'Saving...', background: '#1a1a1a', color: '#f0f0f0', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
     }
 
     const data = {
@@ -311,63 +342,130 @@ async function saveGuitarDesktop() {
         photoURL: photoURL
     };
 
-    await userCol('guitars').doc(guitarId).set(data);
-    closeModal('modal-guitar');
+    try {
+        await userCol('guitars').doc(guitarId).set(data);
+        closeModal('modal-guitar');
+        Swal.fire({ icon: 'success', title: 'Guitar saved!', timer: 1500, showConfirmButton: false, background: '#1a1a1a', color: '#f0f0f0' });
+    } catch (err) {
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message, background: '#1a1a1a', color: '#f0f0f0' });
+    }
 }
 
 async function saveStringDesktop() {
     const guitarId = document.getElementById('mf-str-guitar').value;
     const date = document.getElementById('mf-str-date').value;
     const stringSet = document.getElementById('mf-str-set').value.trim();
-    if (!guitarId || !date || !stringSet) return alert('Fill required fields.');
-    await userCol('stringChanges').add({
-        guitarId: guitarId,
-        date: date,
-        stringSet: stringSet,
-        lifespan: parseInt(document.getElementById('mf-str-life').value) || null,
-        notes: document.getElementById('mf-str-notes').value.trim()
-    });
-    closeModal('modal-string');
+    if (!guitarId || !date || !stringSet) return Swal.fire({ icon: 'warning', title: 'Missing fields', text: 'Fill all required fields.', background: '#1a1a1a', color: '#f0f0f0' });
+
+    Swal.fire({ title: 'Saving...', background: '#1a1a1a', color: '#f0f0f0', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+    try {
+        await userCol('stringChanges').add({
+            guitarId: guitarId,
+            date: date,
+            stringSet: stringSet,
+            lifespan: parseInt(document.getElementById('mf-str-life').value) || null,
+            notes: document.getElementById('mf-str-notes').value.trim()
+        });
+        closeModal('modal-string');
+        Swal.fire({ icon: 'success', title: 'String change saved!', timer: 1500, showConfirmButton: false, background: '#1a1a1a', color: '#f0f0f0' });
+    } catch (err) {
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message, background: '#1a1a1a', color: '#f0f0f0' });
+    }
 }
 
 async function saveSetupDesktop() {
     const guitarId = document.getElementById('mf-setup-guitar').value;
     const date = document.getElementById('mf-setup-date').value;
     const details = document.getElementById('mf-setup-details').value.trim();
-    if (!guitarId || !date || !details) return alert('Fill required fields.');
-    await userCol('setups').add({
-        guitarId: guitarId,
-        date: date,
-        type: document.getElementById('mf-setup-type').value,
-        doneBy: document.getElementById('mf-setup-by').value.trim(),
-        details: details
-    });
-    closeModal('modal-setup');
+    if (!guitarId || !date || !details) return Swal.fire({ icon: 'warning', title: 'Missing fields', text: 'Fill all required fields.', background: '#1a1a1a', color: '#f0f0f0' });
+
+    Swal.fire({ title: 'Saving...', background: '#1a1a1a', color: '#f0f0f0', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+    try {
+        await userCol('setups').add({
+            guitarId: guitarId,
+            date: date,
+            type: document.getElementById('mf-setup-type').value,
+            doneBy: document.getElementById('mf-setup-by').value.trim(),
+            details: details
+        });
+        closeModal('modal-setup');
+        Swal.fire({ icon: 'success', title: 'Setup saved!', timer: 1500, showConfirmButton: false, background: '#1a1a1a', color: '#f0f0f0' });
+    } catch (err) {
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message, background: '#1a1a1a', color: '#f0f0f0' });
+    }
 }
 
+
 // ================================================================
-// DELETE
+// DELETE — con SweetAlert2 confirmación
 // ================================================================
 async function deleteGuitar(id) {
-    if (!confirm('Delete this guitar and all its history?')) return;
-    await userCol('guitars').doc(id).delete();
-    const strSnap = await userCol('stringChanges').where('guitarId', '==', id).get();
-    const setupSnap = await userCol('setups').where('guitarId', '==', id).get();
-    const batch = firestore.batch();
-    strSnap.docs.forEach(d => batch.delete(d.ref));
-    setupSnap.docs.forEach(d => batch.delete(d.ref));
-    await batch.commit();
+    const result = await Swal.fire({
+        title: 'Delete guitar?',
+        text: 'This will delete the guitar and all its history.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#f87171',
+        cancelButtonColor: '#333',
+        confirmButtonText: 'Yes, delete',
+        cancelButtonText: 'Cancel',
+        background: '#1a1a1a',
+        color: '#f0f0f0'
+    });
+    if (!result.isConfirmed) return;
+
+    Swal.fire({ title: 'Deleting...', background: '#1a1a1a', color: '#f0f0f0', allowOutsideClick: false, didOpen: () => { Swal.showLoading(); } });
+
+    try {
+        await userCol('guitars').doc(id).delete();
+        const strSnap = await userCol('stringChanges').where('guitarId', '==', id).get();
+        const setupSnap = await userCol('setups').where('guitarId', '==', id).get();
+        const batch = firestore.batch();
+        strSnap.docs.forEach(d => batch.delete(d.ref));
+        setupSnap.docs.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+        Swal.fire({ icon: 'success', title: 'Deleted!', timer: 1500, showConfirmButton: false, background: '#1a1a1a', color: '#f0f0f0' });
+    } catch (err) {
+        Swal.fire({ icon: 'error', title: 'Error', text: err.message, background: '#1a1a1a', color: '#f0f0f0' });
+    }
 }
 
 async function deleteStringChange(id) {
-    if (!confirm('Delete this entry?')) return;
+    const result = await Swal.fire({
+        title: 'Delete this entry?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#f87171',
+        cancelButtonColor: '#333',
+        confirmButtonText: 'Yes, delete',
+        cancelButtonText: 'Cancel',
+        background: '#1a1a1a',
+        color: '#f0f0f0'
+    });
+    if (!result.isConfirmed) return;
     await userCol('stringChanges').doc(id).delete();
+    Swal.fire({ icon: 'success', title: 'Deleted!', timer: 1500, showConfirmButton: false, background: '#1a1a1a', color: '#f0f0f0' });
 }
 
 async function deleteSetup(id) {
-    if (!confirm('Delete this entry?')) return;
+    const result = await Swal.fire({
+        title: 'Delete this entry?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#f87171',
+        cancelButtonColor: '#333',
+        confirmButtonText: 'Yes, delete',
+        cancelButtonText: 'Cancel',
+        background: '#1a1a1a',
+        color: '#f0f0f0'
+    });
+    if (!result.isConfirmed) return;
     await userCol('setups').doc(id).delete();
+    Swal.fire({ icon: 'success', title: 'Deleted!', timer: 1500, showConfirmButton: false, background: '#1a1a1a', color: '#f0f0f0' });
 }
+
 
 // ================================================================
 // EDIT GUITAR
@@ -578,7 +676,7 @@ function renderSetups() {
         });
     }
 
-    document.getElementById('m-page-setups').innerHTML = html;
+ document.getElementById('m-page-setups').innerHTML = html;
     document.getElementById('d-page-setups').innerHTML =
         '<h2>Setups & Service</h2>' +
         '<p class="subtitle">' + setups.length + ' entries</p>' +
@@ -643,4 +741,3 @@ document.getElementById('import-input').addEventListener('change', async (e) => 
 // SERVICE WORKER
 // ================================================================
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
-
