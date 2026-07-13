@@ -75,6 +75,20 @@ function userCol(name) {
     return firestore.collection('users').doc(currentUser.uid).collection(name);
 }
 
+// ================================================================
+// DATA READY
+// ================================================================
+var dataReady = 0;
+
+function onDataReady() {
+    dataReady++;
+    if (dataReady >= 3) {
+        document.getElementById('loading-screen').style.display = 'none';
+        document.getElementById('app').classList.add('active');
+        render();
+    }
+}
+
 function loadData() {
     userCol('guitars').onSnapshot(snap => {
         guitars = snap.docs.map(d => ({ id: d.id, ...d.data() }));
