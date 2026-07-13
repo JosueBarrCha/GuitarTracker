@@ -90,13 +90,11 @@ function loadData() {
         setups = snap.docs.map(d => ({ id: d.id, ...d.data() }));
         onDataReady();
     });
+
+    // ← Agregá esta línea:
+    loadInventory();
 }
 
-function onDataReady() {
-    document.getElementById('loading-screen').style.display = 'none';
-    document.getElementById('app').classList.add('active');
-    render();
-}
 
 // ================================================================
 // PHOTO UPLOAD -- Base64 (no Storage needed)
@@ -1157,6 +1155,133 @@ function renderSettings() {
 
     document.getElementById('m-page-settings').innerHTML = settingsHtml;
     document.getElementById('d-page-settings').innerHTML = '<h2>Settings</h2><p class="subtitle">Manage your data and account</p>' + settingsHtml;
+}
+
+// ================================================================
+// STRING INVENTORY
+// ================================================================
+function loadInventory() {
+    userCol('stringInventory').onSnapshot(function(snap) {
+        window.stringInventory = snap.docs.map(function(d) { return { id: d.id, ...d.data() }; });
+        renderInventory();
+    });
+}
+
+function renderInventory() {
+    var inv = window.stringInventory || [];
+    var html = '<div class="detail-section"><div class="detail-section-header"><h3>📦 String Inventory</h3></div>';
+
+    if (inv.length === 0) {
+        html += '<p style="color:var(--text-muted);font-size:0.85rem;">No string packs in stock.</p>';
+    } else {
+        inv.forEach(function(item) {
+            html += '<div class="card" style="display:flex;justify-content:space-between;align-items:center;">';
+            html += '<div><div style="font-weight:600;">' + item.name + '</div><div style="font-size:0.8rem;color:var(--text-muted);">' + item.gauge + '</div></div>';
+            html += '<div style="display:flex;align-items:center;gap:8px;">';
+            html += '<button class="btn btn-secondary btn-small" onclick="updateInventoryQty(\'' + item.id + '\', -1)">−</button>';
+            html += '<span style="font-size:1.1rem;font-weight:700;min-width:24px;text-align:center;">' + item.qty + '</span>';
+            html += '<button class="btn btn-secondary btn-small" onclick="updateInventoryQty(\'' + item.id + '\', 1)">+</button>';
+            html += '<button class="btn btn-danger btn-small" onclick="deleteInventoryItem(\'' + item.id + '\')" style="margin-left:8px;">✕</button>';
+            html += '</div></div>';
+        });
+    }
+
+    html += '</div>';
+
+    // Inject into strings page below the filter
+    var mPage = document.getElementById('m-page-strings');
+    var dPage = document.getElementById('d-page-strings');
+    if (mPage && !mPage.querySelector('.inv-section')) {
+        var div = document.createElement('div');
+        div.className = 'inv-section';
+        div.innerHTML = html;
+        mPage.appendChild(div);
+    } else if (mPage) {
+        mPage.querySelector('.inv-section').innerHTML = html;
+    }
+    if (dPage && !dPage.querySelector('.inv-section')) {
+        var div2 = document.createElement('div');
+        div2.className = 'inv-section';
+        div2.innerHTML = html;
+        dPage.appendChild(div2);
+    } else if (dPage) {
+        dPage.querySelector('.inv-section').innerHTML = html;
+    }
+}
+
+async function saveInventory() {
+    var name = document.getElementById('f-inv-name').value.trim();
+    var gauge = document.getElementById('f-inv-gauge').value.trim();
+    var qty = parseInt(document.getElementById('f-inv-qty').value) || 1;
+    if (!name || !gauge) return Swal.fire({ icon: 'warning', title: 'Missing fields', text: 'Fill brand and gauge.', background: '#1a1a1a', color: '#f0f0f0' });
+
+    Swal.fire({ title: 'Saving...', background: '#1a1a1a', color: '#f0f0f0', allowOutsideClick: false, didOpen: function() { Swal.showLoading(); } });
+
+    // Check if same string already exists, if so add to qty
+    var existing = (window.stringInventory || []).find(function(i) { return i.name.toLowerCase() === name.toLowerCase() && i.gauge === gauge; });
+    if (existing) {
+        await userCol('stringInventory').doc(existing.id).update({ qty: existing.qty + qty });
+    } else {
+        await userCol('stringInventory').add({ name: name, gauge: gauge, qty: qty });
+    }
+
+    closeSheet('sheet-inventory');
+    Swal.fire({ icon: 'success', title: 'Added to inventory!', timer: 1500, showConfirmButton: false, background: '#1a1a1a', color: '#f0f0f0' });
+}
+
+async function saveInventoryDesktop() {
+    var name = document.getElementById('mf-inv-name').value.trim();
+    var gauge = document.getElementById('mf-inv-gauge').value.trim();
+    var qty = parseInt(document.getElementById('mf-inv-qty').value) || 1;
+    if (!name || !gauge) return Swal.fire({ icon: 'warning', title: 'Missing fields', text: 'Fill brand and gauge.', background: '#1a1a1a', color: '#f0f0f0' });
+
+    Swal.fire({ title: 'Saving...', background: '#1a1a1a', color: '#f0f0f0', allowOutsideClick: false, didOpen: function() { Swal.showLoading(); } });
+
+    var existing = (window.stringInventory || []).find(function(i) { return i.name.toLowerCase() === name.toLowerCase() && i.gauge === gauge; });
+    if (existing) {
+        await userCol('stringInventory').doc(existing.id).update({ qty: existing.qty + qty });
+    } else {
+        await userCol('stringInventory').add({ name: name, gauge: gauge, qty: qty });
+    }
+
+    closeModal('modal-inventory');
+    Swal.fire({ icon: 'success', title: 'Added to inventory!', timer: 1500, showConfirmButton: false, background: '#1a1a1a', color: '#f0f0f0' });
+}
+
+async function updateInventoryQty(id, change) {
+    var item = (window.stringInventory || []).find(function(i) { return i.id === id; });
+    if (!item) return;
+    var newQty = item.qty + change;
+    if (newQty <= 0) {
+        var result = await Swal.fire({
+            title: 'Remove from inventory?',
+            text: 'This pack will be removed.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#f87171',
+            cancelButtonColor: '#333',
+            confirmButtonText: 'Yes, remove',
+            background: '#1a1a1a',
+            color: '#f0f0f0'
+        });
+        if (result.isConfirmed) await userCol('stringInventory').doc(id).delete();
+    } else {
+        await userCol('stringInventory').doc(id).update({ qty: newQty });
+    }
+}
+
+async function deleteInventoryItem(id) {
+    var result = await Swal.fire({
+        title: 'Delete this item?',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#f87171',
+        cancelButtonColor: '#333',
+        confirmButtonText: 'Yes, delete',
+        background: '#1a1a1a',
+        color: '#f0f0f0'
+    });
+    if (result.isConfirmed) await userCol('stringInventory').doc(id).delete();
 }
 
 
