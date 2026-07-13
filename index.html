@@ -198,6 +198,27 @@
         </div>
     </div>
 
+    <!-- MOBILE SHEET — String Inventory -->
+    <div class="sheet" id="sheet-inventory">
+        <div class="sheet-header"><h2>Add String Pack</h2><button class="sheet-close" onclick="closeSheet('sheet-inventory')">✕</button></div>
+        <div class="form-group"><label>Brand & Model *</label><input type="text" id="f-inv-name" placeholder="e.g. Ernie Ball Regular Slinky"></div>
+        <div class="form-group"><label>Gauge *</label><input type="text" id="f-inv-gauge" placeholder="e.g. 10-46"></div>
+        <div class="form-group"><label>Quantity *</label><input type="number" id="f-inv-qty" value="1" min="1"></div>
+        <button class="btn btn-primary" onclick="saveInventory()">Save</button>
+    </div>
+    
+    <!-- DESKTOP MODAL — String Inventory -->
+    <div class="modal-overlay" id="modal-inventory">
+        <div class="modal">
+            <h3>Add String Pack</h3>
+            <div class="form-group"><label>Brand & Model *</label><input type="text" id="mf-inv-name" placeholder="e.g. Ernie Ball Regular Slinky"></div>
+            <div class="form-group"><label>Gauge *</label><input type="text" id="mf-inv-gauge" placeholder="e.g. 10-46"></div>
+            <div class="form-group"><label>Quantity *</label><input type="number" id="mf-inv-qty" value="1" min="1"></div>
+            <div style="display:flex;gap:10px"><button class="btn btn-primary" onclick="saveInventoryDesktop()">Save</button><button class="btn btn-secondary" onclick="closeModal('modal-inventory')">Cancel</button></div>
+        </div>
+    </div>
+
+    
     <input type="file" id="import-input" accept=".json" style="display:none">
 
     <script src="app.js"></script>
