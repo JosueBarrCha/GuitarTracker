@@ -646,6 +646,175 @@ function addCalendarReminder(guitarId) {
 }
 
 // ================================================================
+// GUITAR DETAIL VIEW
+// ================================================================
+function openGuitarDetail(guitarId) {
+    var g = guitars.find(function(x) { return x.id === guitarId; });
+    if (!g) return;
+
+    var ss = getStringStatus(g.id);
+    var guitarStrings = stringChanges.filter(function(s) { return s.guitarId === g.id; });
+    var guitarSetups = setups.filter(function(s) { return s.guitarId === g.id; });
+    var isMobile = window.innerWidth <= 768;
+
+    var photoHtml = g.photoURL
+        ? '<img class="detail-photo" src="' + g.photoURL + '" alt="' + g.name + '">'
+        : '<div class="detail-photo-placeholder">🎸</div>';
+
+    var specsHtml = '';
+    if (g.brand) specsHtml += '<div class="detail-spec"><div class="label">Brand</div><div class="value">' + g.brand + '</div></div>';
+    if (g.model) specsHtml += '<div class="detail-spec"><div class="label">Model</div><div class="value">' + g.model + '</div></div>';
+    if (g.year) specsHtml += '<div class="detail-spec"><div class="label">Year</div><div class="value">' + g.year + '</div></div>';
+    if (g.tuning) specsHtml += '<div class="detail-spec"><div class="label">Tuning</div><div class="value">' + g.tuning + '</div></div>';
+    if (ss.stringSet) specsHtml += '<div class="detail-spec"><div class="label">Current Strings</div><div class="value">' + ss.stringSet + '</div></div>';
+    specsHtml += '<div class="detail-spec"><div class="label">String Status</div><div class="value"><span class="badge ' + ss.cls + '">' + ss.text + '</span></div></div>';
+
+    var timerHtml = getTimerBarHtml(ss);
+
+    var stringsHtml = '';
+    if (guitarStrings.length === 0) {
+        stringsHtml = '<p style="color:var(--text-muted);font-size:0.85rem;">No string changes logged.</p>';
+    } else {
+        guitarStrings.forEach(function(s) {
+            stringsHtml += '<div class="history-item">';
+            stringsHtml += '<div class="date">' + s.date + '</div>';
+            stringsHtml += '<div class="detail">🎵 ' + s.stringSet + '</div>';
+            if (s.lifespan) stringsHtml += '<div class="meta">⏱ Change after ' + s.lifespan + ' days</div>';
+            if (s.notes) stringsHtml += '<div class="meta">' + s.notes + '</div>';
+            stringsHtml += '</div>';
+        });
+    }
+
+    var setupsHtml = '';
+    if (guitarSetups.length === 0) {
+        setupsHtml = '<p style="color:var(--text-muted);font-size:0.85rem;">No setups logged.</p>';
+    } else {
+        guitarSetups.forEach(function(s) {
+            setupsHtml += '<div class="history-item">';
+            setupsHtml += '<div class="date">' + s.date + ' · ' + s.type + '</div>';
+            if (s.doneBy) setupsHtml += '<div class="meta">Done by: ' + s.doneBy + '</div>';
+            setupsHtml += '<div class="detail">' + s.details + '</div>';
+            setupsHtml += '</div>';
+        });
+    }
+
+    var notesHtml = g.notes ? '<div class="detail-section"><div class="detail-section-header"><h3>📝 Notes</h3></div><p style="font-size:0.9rem;color:var(--text-muted);">' + g.notes + '</p></div>' : '';
+
+    var html = '<div class="guitar-detail">' +
+        '<button class="detail-back-btn" onclick="closeGuitarDetail()">← Back to guitars</button>' +
+        '<div class="detail-hero">' + photoHtml + '</div>' +
+        '<div class="detail-title">' + g.name + '</div>' +
+        '<div class="detail-subtitle">' + [g.brand, g.model, g.year].filter(Boolean).join(' · ') + '</div>' +
+        '<div class="detail-actions">' +
+        '<button class="btn btn-primary btn-small" onclick="exportGuitarPDF(\'' + g.id + '\')">📄 Export PDF</button>' +
+        '<button class="btn btn-calendar btn-small" onclick="addCalendarReminder(\'' + g.id + '\')">📅 Calendar</button>' +
+        '<button class="btn btn-secondary btn-small" onclick="' + (isMobile ? "editGuitarMobile('" + g.id + "')" : "editGuitarDesktop('" + g.id + "')") + '">✏️ Edit</button>' +
+        '</div>' +
+        '<div class="detail-specs">' + specsHtml + '</div>' +
+        timerHtml +
+        notesHtml +
+        '<div class="detail-section"><div class="detail-section-header"><h3>🎵 String History</h3></div>' + stringsHtml + '</div>' +
+        '<div class="detail-section"><div class="detail-section-header"><h3>🔧 Setup History</h3></div>' + setupsHtml + '</div>' +
+        '</div>';
+
+    if (isMobile) {
+        document.getElementById('m-page-guitars').innerHTML = html;
+    } else {
+        document.getElementById('d-page-guitars').innerHTML = html;
+    }
+}
+
+function closeGuitarDetail() {
+    renderGuitars();
+}
+
+// ================================================================
+// EXPORT PDF — Technical Sheet
+// ================================================================
+function exportGuitarPDF(guitarId) {
+    var g = guitars.find(function(x) { return x.id === guitarId; });
+    if (!g) return;
+
+    var ss = getStringStatus(g.id);
+    var guitarStrings = stringChanges.filter(function(s) { return s.guitarId === g.id; });
+    var guitarSetups = setups.filter(function(s) { return s.guitarId === g.id; });
+
+    Swal.fire({ title: 'Generating PDF...', background: '#1a1a1a', color: '#f0f0f0', allowOutsideClick: false, didOpen: function() { Swal.showLoading(); } });
+
+    var photoHtml = g.photoURL
+        ? '<img style="width:100%;max-height:200px;object-fit:cover;border-radius:8px;margin-bottom:16px;" src="' + g.photoURL + '">'
+        : '';
+
+    var specsHtml = '';
+    if (g.brand) specsHtml += '<div style="background:#f5f5f5;padding:10px;border-radius:6px;"><div style="font-size:10px;text-transform:uppercase;color:#666;">Brand</div><div style="font-size:14px;font-weight:600;">' + g.brand + '</div></div>';
+    if (g.model) specsHtml += '<div style="background:#f5f5f5;padding:10px;border-radius:6px;"><div style="font-size:10px;text-transform:uppercase;color:#666;">Model</div><div style="font-size:14px;font-weight:600;">' + g.model + '</div></div>';
+    if (g.year) specsHtml += '<div style="background:#f5f5f5;padding:10px;border-radius:6px;"><div style="font-size:10px;text-transform:uppercase;color:#666;">Year</div><div style="font-size:14px;font-weight:600;">' + g.year + '</div></div>';
+    if (g.tuning) specsHtml += '<div style="background:#f5f5f5;padding:10px;border-radius:6px;"><div style="font-size:10px;text-transform:uppercase;color:#666;">Tuning</div><div style="font-size:14px;font-weight:600;">' + g.tuning + '</div></div>';
+    if (ss.stringSet) specsHtml += '<div style="background:#f5f5f5;padding:10px;border-radius:6px;"><div style="font-size:10px;text-transform:uppercase;color:#666;">Current Strings</div><div style="font-size:14px;font-weight:600;">' + ss.stringSet + '</div></div>';
+    specsHtml += '<div style="background:#f5f5f5;padding:10px;border-radius:6px;"><div style="font-size:10px;text-transform:uppercase;color:#666;">String Status</div><div style="font-size:14px;font-weight:600;">' + ss.text + '</div></div>';
+
+    var stringsTableHtml = '';
+    if (guitarStrings.length > 0) {
+        stringsTableHtml = '<div style="margin-bottom:16px;"><h2 style="font-size:14px;text-transform:uppercase;color:#ff6b35;border-bottom:1px solid #ddd;padding-bottom:4px;margin-bottom:8px;">🎵 String Change History</h2><table style="width:100%;border-collapse:collapse;font-size:11px;"><tr style="background:#f0f0f0;"><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #ddd;">Date</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #ddd;">String Set</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #ddd;">Lifespan</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #ddd;">Notes</th></tr>';
+        guitarStrings.forEach(function(s) {
+            stringsTableHtml += '<tr><td style="padding:6px 8px;border-bottom:1px solid #eee;">' + s.date + '</td><td style="padding:6px 8px;border-bottom:1px solid #eee;">' + s.stringSet + '</td><td style="padding:6px 8px;border-bottom:1px solid #eee;">' + (s.lifespan ? s.lifespan + ' days' : '—') + '</td><td style="padding:6px 8px;border-bottom:1px solid #eee;">' + (s.notes || '—') + '</td></tr>';
+        });
+        stringsTableHtml += '</table></div>';
+    }
+
+    var setupsTableHtml = '';
+    if (guitarSetups.length > 0) {
+        setupsTableHtml = '<div style="margin-bottom:16px;"><h2 style="font-size:14px;text-transform:uppercase;color:#ff6b35;border-bottom:1px solid #ddd;padding-bottom:4px;margin-bottom:8px;">🔧 Setup & Service History</h2><table style="width:100%;border-collapse:collapse;font-size:11px;"><tr style="background:#f0f0f0;"><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #ddd;">Date</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #ddd;">Type</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #ddd;">Done By</th><th style="text-align:left;padding:6px 8px;border-bottom:1px solid #ddd;">Details</th></tr>';
+        guitarSetups.forEach(function(s) {
+            setupsTableHtml += '<tr><td style="padding:6px 8px;border-bottom:1px solid #eee;">' + s.date + '</td><td style="padding:6px 8px;border-bottom:1px solid #eee;">' + s.type + '</td><td style="padding:6px 8px;border-bottom:1px solid #eee;">' + (s.doneBy || '—') + '</td><td style="padding:6px 8px;border-bottom:1px solid #eee;">' + s.details + '</td></tr>';
+        });
+        setupsTableHtml += '</table></div>';
+    }
+
+    var notesHtml = g.notes ? '<div style="margin-bottom:16px;"><h2 style="font-size:14px;text-transform:uppercase;color:#ff6b35;border-bottom:1px solid #ddd;padding-bottom:4px;margin-bottom:8px;">📝 Notes</h2><p style="font-size:12px;color:#333;">' + g.notes + '</p></div>' : '';
+
+    var today = new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+
+    var pdfHtml = '<div style="width:210mm;padding:20mm;background:#ffffff;color:#111111;font-family:Helvetica,Arial,sans-serif;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px solid #ff6b35;padding-bottom:12px;margin-bottom:20px;"><h1 style="font-size:24px;margin:0;">' + g.name + '</h1><div style="font-size:14px;color:#666;">🎸 Guitar Tracker</div></div>' +
+        photoHtml +
+        '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:20px;">' + specsHtml + '</div>' +
+        stringsTableHtml +
+        setupsTableHtml +
+        notesHtml +
+        '<div style="margin-top:20px;padding-top:10px;border-top:1px solid #ddd;font-size:10px;color:#999;text-align:center;">Generated by Guitar Tracker · ' + today + '</div>' +
+        '</div>';
+
+    var container = document.createElement('div');
+    container.style.position = 'fixed';
+    container.style.top = '0';
+    container.style.left = '0';
+    container.style.zIndex = '-1';
+    container.style.opacity = '1';
+    container.innerHTML = pdfHtml;
+    document.body.appendChild(container);
+
+    var element = container.firstChild;
+
+    var opt = {
+        margin: 0,
+        filename: g.name.replace(/\s+/g, '-').toLowerCase() + '-technical-sheet.pdf',
+        image: { type: 'jpeg', quality: 0.9 },
+        html2canvas: { scale: 2, useCORS: true, logging: false },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(element).save().then(function() {
+        document.body.removeChild(container);
+        Swal.fire({ icon: 'success', title: 'PDF exported!', timer: 1500, showConfirmButton: false, background: '#1a1a1a', color: '#f0f0f0' });
+    }).catch(function(err) {
+        document.body.removeChild(container);
+        Swal.fire({ icon: 'error', title: 'PDF Error', text: err.message, background: '#1a1a1a', color: '#f0f0f0' });
+    });
+}
+
+
+// ================================================================
 // RENDER
 // ================================================================
 function render() {
@@ -681,7 +850,7 @@ function renderGuitars() {
             var editFn = isMobile ? "editGuitarMobile('" + g.id + "')" : "editGuitarDesktop('" + g.id + "')";
 
             html += '<div class="card">';
-            html += '<div class="card-header"><span class="card-title">' + g.name + '</span><span class="badge ' + ss.cls + '">' + ss.text + '</span></div>';
+            html += '<div class="card-header" style="cursor:pointer" onclick="openGuitarDetail(\'' + g.id + '\')"><span class="card-title">' + g.name + '</span><span class="badge ' + ss.cls + '">' + ss.text + '</span></div>';
             html += '<div class="guitar-card-content">' + photoHtml + '<div class="guitar-card-info"><div class="card-grid">' + cardFields + '</div></div></div>';
             html += timerHtml;
             html += '<div class="actions">';
