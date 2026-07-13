@@ -579,4 +579,68 @@ function renderSetups() {
     }
 
     document.getElementById('m-page-setups').innerHTML = html;
-    document.getElementById('d-page
+    document.getElementById('d-page-setups').innerHTML =
+        '<h2>Setups & Service</h2>' +
+        '<p class="subtitle">' + setups.length + ' entries</p>' +
+        '<button class="desktop-add-btn" onclick="openModal(\'modal-setup\')">+ Log Setup</button>' +
+        html;
+}
+
+function renderSettings() {
+    const settingsHtml =
+        '<div class="settings-section">' +
+        '<h3>Data</h3>' +
+        '<button class="settings-btn" onclick="exportData()"><span class="s-icon">📤</span> Export Backup (JSON)</button>' +
+        '<button class="settings-btn" onclick="document.getElementById(\'import-input\').click()"><span class="s-icon">📥</span> Import Backup</button>' +
+        '</div>' +
+        '<div class="settings-section">' +
+        '<h3>Account</h3>' +
+        '<button class="settings-btn" onclick="signOut()"><span class="s-icon">🚪</span> Sign Out</button>' +
+        '</div>';
+
+    document.getElementById('m-page-settings').innerHTML = settingsHtml;
+    document.getElementById('d-page-settings').innerHTML = '<h2>Settings</h2><p class="subtitle">Manage your data and account</p>' + settingsHtml;
+}
+
+// ================================================================
+// EXPORT / IMPORT
+// ================================================================
+function exportData() {
+    const data = { guitars: guitars, stringChanges: stringChanges, setups: setups, exportDate: new Date().toISOString() };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'guitar-tracker-' + todayStr() + '.json';
+    a.click();
+}
+
+document.getElementById('import-input').addEventListener('change', async (e) => {
+    const file = e.target.files;
+    if (!file) return;
+    try {
+        const text = await file.text();
+        const data = JSON.parse(text);
+        if (!confirm('Import ' + (data.guitars ? data.guitars.length : 0) + ' guitars, ' + (data.stringChanges ? data.stringChanges.length : 0) + ' string changes, ' + (data.setups ? data.setups.length : 0) + ' setups? This REPLACES current data.')) return;
+
+        const gSnap = await userCol('guitars').get();
+        const sSnap = await userCol('stringChanges').get();
+        const uSnap = await userCol('setups').get();
+        const batch = firestore.batch();
+        gSnap.docs.forEach(d => batch.delete(d.ref));
+        sSnap.docs.forEach(d => batch.delete(d.ref));
+        uSnap.docs.forEach(d => batch.delete(d.ref));
+        await batch.commit();
+
+        for (const g of (data.guitars || [])) { const id = g.id; delete g.id; await userCol('guitars').add(g); }
+        for (const s of (data.stringChanges || [])) { const id = s.id; delete s.id; await userCol('stringChanges').add(s); }
+        for (const s of (data.setups || [])) { const id = s.id; delete s.id; await userCol('setups').add(s); }
+        alert('Import complete!');
+    } catch (err) { alert('Import failed: ' + err.message); }
+    e.target.value = '';
+});
+
+// ================================================================
+// SERVICE WORKER
+// ================================================================
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js');
+
