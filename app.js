@@ -91,8 +91,7 @@ function loadData() {
         onDataReady();
     });
 
-    // ← Agregá esta línea:
-    loadInventory();
+
 }
 
 
@@ -1096,8 +1095,7 @@ function renderStrings() {
         '<h2>String Changes</h2>' +
         '<p class="subtitle">' + stringChanges.length + ' entries</p>' +
         '<button class="desktop-add-btn" onclick="openModal(\'modal-string\')">+ Log String Change</button>' +
-        '<button class="desktop-add-btn" onclick="openModal(\'modal-string\')">+ Log String Change</button>' +
-'<button class="desktop-add-btn" style="background:var(--surface);border:1px solid var(--border);color:var(--text);margin-left:8px;" onclick="openModal(\'modal-inventory\')">📦 Add String Pack</button>' +
+        '<button class="desktop-add-btn" style="background:var(--surface);border:1px solid var(--border);color:var(--text);margin-left:8px;" onclick="openModal(\'modal-inventory\')">📦 Add String Pack</button>' +
         filterHtml + html;
 
     // Restore filter value after re-render
@@ -1107,7 +1105,11 @@ function renderStrings() {
     // Also update desktop filter
     var allFilters = document.querySelectorAll('#filter-strings');
     allFilters.forEach(function(el) { el.value = filterValue; });
+
+    // Load inventory after strings page is rendered
+    loadInventory();
 }
+
 
 function renderSetups() {
     var filterHtml = '<div class="filter-bar">' +
