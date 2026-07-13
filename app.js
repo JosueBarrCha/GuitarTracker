@@ -527,26 +527,39 @@ function editGuitarDesktop(id) {
 }
 
 // ================================================================
-// STRING STATUS & ALERTS
+// STRING STATUS & ALERTS & TIMER
 // ================================================================
 function getStringStatus(guitarId) {
-    const changes = stringChanges.filter(s => s.guitarId === guitarId).sort((a, b) => new Date(b.date) - new Date(a.date));
-    if (changes.length === 0) return { cls: 'badge-none', text: 'No data', stringSet: null, daysLeft: null };
-    const latest = changes[0];
-    if (!latest.lifespan) return { cls: 'badge-fresh', text: 'OK', stringSet: latest.stringSet, daysLeft: null };
-    const due = new Date(latest.date);
+    var changes = stringChanges.filter(function(s) { return s.guitarId === guitarId; }).sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
+    if (changes.length === 0) return { cls: 'badge-none', text: 'No data', stringSet: null, daysLeft: null, percent: 0, lifespan: 0 };
+    var latest = changes[0];
+    if (!latest.lifespan) return { cls: 'badge-fresh', text: 'OK', stringSet: latest.stringSet, daysLeft: null, percent: 100, lifespan: 0 };
+    var due = new Date(latest.date);
     due.setDate(due.getDate() + latest.lifespan);
-    const daysLeft = Math.ceil((due - new Date()) / 86400000);
-    if (daysLeft < 0) return { cls: 'badge-overdue', text: Math.abs(daysLeft) + 'd overdue', stringSet: latest.stringSet, daysLeft: daysLeft };
-    if (daysLeft <= 7) return { cls: 'badge-due', text: daysLeft + 'd left', stringSet: latest.stringSet, daysLeft: daysLeft };
-    return { cls: 'badge-fresh', text: daysLeft + 'd left', stringSet: latest.stringSet, daysLeft: daysLeft };
+    var daysLeft = Math.ceil((due - new Date()) / 86400000);
+    var daysUsed = latest.lifespan - daysLeft;
+    var percent = Math.max(0, Math.min(100, Math.round((1 - daysUsed / latest.lifespan) * 100)));
+    if (daysLeft < 0) return { cls: 'badge-overdue', text: Math.abs(daysLeft) + 'd overdue', stringSet: latest.stringSet, daysLeft: daysLeft, percent: 0, lifespan: latest.lifespan };
+    if (daysLeft <= 7) return { cls: 'badge-due', text: daysLeft + 'd left', stringSet: latest.stringSet, daysLeft: daysLeft, percent: percent, lifespan: latest.lifespan };
+    return { cls: 'badge-fresh', text: daysLeft + 'd left', stringSet: latest.stringSet, daysLeft: daysLeft, percent: percent, lifespan: latest.lifespan };
+}
+
+function getTimerBarHtml(status) {
+    if (status.daysLeft === null) return '';
+    var barClass = 'timer-bar-fresh';
+    if (status.daysLeft <= 7 && status.daysLeft >= 0) barClass = 'timer-bar-due';
+    if (status.daysLeft < 0) barClass = 'timer-bar-overdue';
+    return '<div class="string-timer">' +
+        '<div class="timer-bar-container"><div class="timer-bar ' + barClass + '" style="width:' + status.percent + '%"></div></div>' +
+        '<div class="timer-label"><span>Installed</span><span>' + status.text + '</span></div>' +
+        '</div>';
 }
 
 function getAlerts() {
-    const overdue = [];
-    const dueSoon = [];
-    guitars.forEach(g => {
-        const status = getStringStatus(g.id);
+    var overdue = [];
+    var dueSoon = [];
+    guitars.forEach(function(g) {
+        var status = getStringStatus(g.id);
         if (status.daysLeft !== null && status.daysLeft < 0) {
             overdue.push({ name: g.name, days: Math.abs(status.daysLeft), id: g.id });
         } else if (status.daysLeft !== null && status.daysLeft <= 7) {
@@ -557,12 +570,12 @@ function getAlerts() {
 }
 
 function renderAlerts() {
-    const alerts = getAlerts();
-    let html = '';
+    var alerts = getAlerts();
+    var html = '';
 
     if (alerts.overdue.length > 0) {
         html += '<div class="alerts-banner"><h3>⚠️ Strings Overdue</h3>';
-        alerts.overdue.forEach(a => {
+        alerts.overdue.forEach(function(a) {
             html += '<div class="alert-item"><span class="guitar">' + a.name + '</span><span class="days">' + a.days + 'd overdue</span></div>';
         });
         html += '</div>';
@@ -570,7 +583,7 @@ function renderAlerts() {
 
     if (alerts.dueSoon.length > 0) {
         html += '<div class="alerts-banner alerts-banner-warning"><h3>🔔 Change Soon</h3>';
-        alerts.dueSoon.forEach(a => {
+        alerts.dueSoon.forEach(function(a) {
             html += '<div class="alert-item"><span class="guitar">' + a.name + '</span><span class="days">' + a.days + 'd left</span></div>';
         });
         html += '</div>';
@@ -578,6 +591,58 @@ function renderAlerts() {
 
     document.getElementById('m-alerts').innerHTML = html;
     document.getElementById('d-alerts').innerHTML = html;
+}
+
+// ================================================================
+// CALENDAR REMINDER (.ics file)
+// ================================================================
+function addCalendarReminder(guitarId) {
+    var g = guitars.find(function(x) { return x.id === guitarId; });
+    if (!g) return;
+    var status = getStringStatus(guitarId);
+    var changes = stringChanges.filter(function(s) { return s.guitarId === guitarId; }).sort(function(a, b) { return new Date(b.date) - new Date(a.date); });
+    if (changes.length === 0 || !changes[0].lifespan) {
+        Swal.fire({ icon: 'info', title: 'No lifespan set', text: 'Log a string change with a "Change after" value first.', background: '#1a1a1a', color: '#f0f0f0' });
+        return;
+    }
+
+    var latest = changes[0];
+    var dueDate = new Date(latest.date);
+    dueDate.setDate(dueDate.getDate() + latest.lifespan);
+
+    // Format date as YYYYMMDD for .ics
+    var year = dueDate.getFullYear();
+    var month = String(dueDate.getMonth() + 1).padStart(2, '0');
+    var day = String(dueDate.getDate()).padStart(2, '0');
+    var dateStr = year + month + day;
+
+    var now = new Date();
+    var stamp = now.getFullYear() + String(now.getMonth() + 1).padStart(2, '0') + String(now.getDate()).padStart(2, '0') + 'T' + String(now.getHours()).padStart(2, '0') + String(now.getMinutes()).padStart(2, '0') + '00';
+
+    var ics = 'BEGIN:VCALENDAR\r\n' +
+        'VERSION:2.0\r\n' +
+        'PRODID:-//Guitar Tracker//EN\r\n' +
+        'BEGIN:VEVENT\r\n' +
+        'DTSTART;VALUE=DATE:' + dateStr + '\r\n' +
+        'DTEND;VALUE=DATE:' + dateStr + '\r\n' +
+        'DTSTAMP:' + stamp + '\r\n' +
+        'SUMMARY:🎸 Change strings - ' + g.name + '\r\n' +
+        'DESCRIPTION:Time to change strings on your ' + g.name + '. Current strings: ' + latest.stringSet + '\r\n' +
+        'BEGIN:VALARM\r\n' +
+        'TRIGGER:-P1D\r\n' +
+        'ACTION:DISPLAY\r\n' +
+        'DESCRIPTION:String change due tomorrow for ' + g.name + '\r\n' +
+        'END:VALARM\r\n' +
+        'END:VEVENT\r\n' +
+        'END:VCALENDAR';
+
+    var blob = new Blob([ics], { type: 'text/calendar' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = 'string-change-' + g.name.replace(/\s+/g, '-').toLowerCase() + '.ics';
+    a.click();
+
+    Swal.fire({ icon: 'success', title: 'Reminder created!', text: 'Open the downloaded file to add it to your calendar.', timer: 3000, showConfirmButton: false, background: '#1a1a1a', color: '#f0f0f0' });
 }
 
 // ================================================================
@@ -592,34 +657,38 @@ function render() {
 }
 
 function renderGuitars() {
-    const isMobile = window.innerWidth <= 768;
+    var isMobile = window.innerWidth <= 768;
 
-    let html = '';
+    var html = '';
     if (guitars.length === 0) {
         html = '<div class="empty-state"><div class="big-icon">🎸</div><p>No guitars yet. Add one!</p></div>';
     } else {
-        guitars.forEach(g => {
-            const ss = getStringStatus(g.id);
-            const lastSetup = setups.filter(s => s.guitarId === g.id)[0];
-            const photoHtml = g.photoURL
+        guitars.forEach(function(g) {
+            var ss = getStringStatus(g.id);
+            var lastSetup = setups.filter(function(s) { return s.guitarId === g.id; })[0];
+            var photoHtml = g.photoURL
                 ? '<img class="guitar-photo" src="' + g.photoURL + '" alt="' + g.name + '">'
                 : '<div class="guitar-photo-placeholder">🎸</div>';
 
-            let cardFields = '';
+            var cardFields = '';
             if (g.brand) cardFields += '<div class="card-field"><span class="label">Brand</span><span class="value">' + g.brand + '</span></div>';
             if (g.model) cardFields += '<div class="card-field"><span class="label">Model</span><span class="value">' + g.model + '</span></div>';
             if (g.tuning) cardFields += '<div class="card-field"><span class="label">Tuning</span><span class="value">' + g.tuning + '</span></div>';
             if (ss.stringSet) cardFields += '<div class="card-field"><span class="label">Current Strings</span><span class="value">' + ss.stringSet + '</span></div>';
             cardFields += '<div class="card-field"><span class="label">Last Setup</span><span class="value">' + (lastSetup ? lastSetup.date + ' · ' + lastSetup.type : '—') + '</span></div>';
 
-            const editFn = isMobile ? "editGuitarMobile('" + g.id + "')" : "editGuitarDesktop('" + g.id + "')";
+            var timerHtml = getTimerBarHtml(ss);
+            var editFn = isMobile ? "editGuitarMobile('" + g.id + "')" : "editGuitarDesktop('" + g.id + "')";
 
             html += '<div class="card">';
             html += '<div class="card-header"><span class="card-title">' + g.name + '</span><span class="badge ' + ss.cls + '">' + ss.text + '</span></div>';
             html += '<div class="guitar-card-content">' + photoHtml + '<div class="guitar-card-info"><div class="card-grid">' + cardFields + '</div></div></div>';
-            html += '<div class="actions"><button class="btn btn-secondary btn-small" onclick="' + editFn + '">Edit</button>';
-            html += '<button class="btn btn-danger btn-small" onclick="deleteGuitar(\'' + g.id + '\')">Delete</button></div>';
-            html += '</div>';
+            html += timerHtml;
+            html += '<div class="actions">';
+            html += '<button class="btn btn-secondary btn-small" onclick="' + editFn + '">Edit</button>';
+            html += '<button class="btn btn-danger btn-small" onclick="deleteGuitar(\'' + g.id + '\')">Delete</button>';
+            html += '<button class="btn btn-calendar btn-small" onclick="addCalendarReminder(\'' + g.id + '\')" title="Add to calendar">📅</button>';
+            html += '</div></div>';
         });
     }
 
@@ -632,12 +701,28 @@ function renderGuitars() {
 }
 
 function renderStrings() {
-    let html = '';
-    if (stringChanges.length === 0) {
+    var filterHtml = '<div class="filter-bar">' +
+        '<label>Filter:</label>' +
+        '<select id="filter-strings" onchange="renderStrings()">' +
+        '<option value="all">All guitars</option>';
+    guitars.forEach(function(g) {
+        filterHtml += '<option value="' + g.id + '">' + g.name + '</option>';
+    });
+    filterHtml += '</select></div>';
+
+    var filterEl = document.getElementById('filter-strings');
+    var filterValue = filterEl ? filterEl.value : 'all';
+
+    var filtered = filterValue === 'all'
+        ? stringChanges
+        : stringChanges.filter(function(s) { return s.guitarId === filterValue; });
+
+    var html = '';
+    if (filtered.length === 0) {
         html = '<div class="empty-state"><div class="big-icon">🎵</div><p>No string changes logged yet.</p></div>';
     } else {
-        stringChanges.forEach(s => {
-            const g = guitars.find(x => x.id === s.guitarId);
+        filtered.forEach(function(s) {
+            var g = guitars.find(function(x) { return x.id === s.guitarId; });
             html += '<div class="history-item">';
             html += '<div style="display:flex;justify-content:space-between;align-items:center">';
             html += '<span class="guitar-name">' + (g ? g.name : 'Unknown') + '</span>';
@@ -650,21 +735,45 @@ function renderStrings() {
         });
     }
 
-    document.getElementById('m-page-strings').innerHTML = html;
+    document.getElementById('m-page-strings').innerHTML = filterHtml + html;
     document.getElementById('d-page-strings').innerHTML =
         '<h2>String Changes</h2>' +
         '<p class="subtitle">' + stringChanges.length + ' entries</p>' +
         '<button class="desktop-add-btn" onclick="openModal(\'modal-string\')">+ Log String Change</button>' +
-        html;
+        filterHtml + html;
+
+    // Restore filter value after re-render
+    var newFilterEl = document.getElementById('filter-strings');
+    if (newFilterEl) newFilterEl.value = filterValue;
+
+    // Also update desktop filter
+    var allFilters = document.querySelectorAll('#filter-strings');
+    allFilters.forEach(function(el) { el.value = filterValue; });
 }
 
 function renderSetups() {
-    let html = '';
-    if (setups.length === 0) {
+    var filterHtml = '<div class="filter-bar">' +
+        '<label>Filter:</label>' +
+        '<select id="filter-setups" onchange="renderSetups()">' +
+        '<option value="all">All guitars</option>';
+    guitars.forEach(function(g) {
+        filterHtml += '<option value="' + g.id + '">' + g.name + '</option>';
+    });
+    filterHtml += '</select></div>';
+
+    var filterEl = document.getElementById('filter-setups');
+    var filterValue = filterEl ? filterEl.value : 'all';
+
+    var filtered = filterValue === 'all'
+        ? setups
+        : setups.filter(function(s) { return s.guitarId === filterValue; });
+
+    var html = '';
+    if (filtered.length === 0) {
         html = '<div class="empty-state"><div class="big-icon">🔧</div><p>No setups logged yet.</p></div>';
     } else {
-        setups.forEach(s => {
-            const g = guitars.find(x => x.id === s.guitarId);
+        filtered.forEach(function(s) {
+            var g = guitars.find(function(x) { return x.id === s.guitarId; });
             html += '<div class="history-item">';
             html += '<div style="display:flex;justify-content:space-between;align-items:center">';
             html += '<span class="guitar-name">' + (g ? g.name : 'Unknown') + '</span>';
@@ -676,28 +785,19 @@ function renderSetups() {
         });
     }
 
- document.getElementById('m-page-setups').innerHTML = html;
+    document.getElementById('m-page-setups').innerHTML = filterHtml + html;
     document.getElementById('d-page-setups').innerHTML =
         '<h2>Setups & Service</h2>' +
         '<p class="subtitle">' + setups.length + ' entries</p>' +
         '<button class="desktop-add-btn" onclick="openModal(\'modal-setup\')">+ Log Setup</button>' +
-        html;
-}
+        filterHtml + html;
 
-function renderSettings() {
-    const settingsHtml =
-        '<div class="settings-section">' +
-        '<h3>Data</h3>' +
-        '<button class="settings-btn" onclick="exportData()"><span class="s-icon">📤</span> Export Backup (JSON)</button>' +
-        '<button class="settings-btn" onclick="document.getElementById(\'import-input\').click()"><span class="s-icon">📥</span> Import Backup</button>' +
-        '</div>' +
-        '<div class="settings-section">' +
-        '<h3>Account</h3>' +
-        '<button class="settings-btn" onclick="signOut()"><span class="s-icon">🚪</span> Sign Out</button>' +
-        '</div>';
+    // Restore filter value
+    var newFilterEl = document.getElementById('filter-setups');
+    if (newFilterEl) newFilterEl.value = filterValue;
 
-    document.getElementById('m-page-settings').innerHTML = settingsHtml;
-    document.getElementById('d-page-settings').innerHTML = '<h2>Settings</h2><p class="subtitle">Manage your data and account</p>' + settingsHtml;
+    var allFilters = document.querySelectorAll('#filter-setups');
+    allFilters.forEach(function(el) { el.value = filterValue; });
 }
 
 // ================================================================
