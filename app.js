@@ -292,7 +292,6 @@ async function saveGuitar() {
         Swal.fire({ icon: 'error', title: 'Error', text: err.message, background: '#1a1a1a', color: '#f0f0f0' });
     }
 }
-
 async function saveStringChange() {
     const guitarId = document.getElementById('f-str-guitar').value;
     const date = document.getElementById('f-str-date').value;
@@ -309,12 +308,23 @@ async function saveStringChange() {
             lifespan: parseInt(document.getElementById('f-str-life').value) || null,
             notes: document.getElementById('f-str-notes').value.trim()
         });
+
+        // Auto-deduct from inventory
+        var inv = (window.stringInventory || []).find(function(i) {
+            return stringSet.toLowerCase().includes(i.name.toLowerCase()) ||
+                   i.name.toLowerCase().includes(stringSet.toLowerCase());
+        });
+        if (inv && inv.qty > 0) {
+            await userCol('stringInventory').doc(inv.id).update({ qty: inv.qty - 1 });
+        }
+
         closeSheet('sheet-string');
         Swal.fire({ icon: 'success', title: 'String change saved!', timer: 1500, showConfirmButton: false, background: '#1a1a1a', color: '#f0f0f0' });
     } catch (err) {
         Swal.fire({ icon: 'error', title: 'Error', text: err.message, background: '#1a1a1a', color: '#f0f0f0' });
     }
 }
+
 
 async function saveSetup() {
     const guitarId = document.getElementById('f-setup-guitar').value;
