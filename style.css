@@ -561,3 +561,172 @@ body {
 .settings-btn:hover { background: var(--surface-2); }
 .settings-btn .s-icon { font-size: 1.2rem; }
 
+
+/* ===== TIMER VISUAL / PROGRESS BAR ===== */
+.string-timer {
+    margin-top: 10px;
+}
+
+.timer-bar-container {
+    height: 6px;
+    background: var(--surface-2);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-top: 4px;
+}
+
+.timer-bar {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+.timer-bar-fresh { background: var(--success); }
+.timer-bar-due { background: var(--warning); }
+.timer-bar-overdue { background: var(--danger); }
+
+.timer-label {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    margin-top: 3px;
+}
+
+/* ===== FILTER BAR ===== */
+.filter-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.filter-bar select {
+    padding: 8px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    font-size: 0.85rem;
+    -webkit-appearance: none;
+}
+
+.filter-bar select:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.filter-bar label {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+}
+
+/* ===== CALENDAR REMINDER BUTTON ===== */
+.btn-calendar {
+    background: rgba(52, 211, 153, 0.15);
+    color: var(--success);
+    border: 1px solid rgba(52, 211, 153, 0.3);
+}
+
+.btn-calendar:hover {
+    background: rgba(52, 211, 153, 0.25);
+}
+
+/* ===== GUITAR DETAIL VIEW ===== */
+.detail-photo {
+    width: 100%;
+    max-height: 250px;
+    object-fit: cover;
+    border-radius: var(--radius);
+    margin-bottom: 16px;
+}
+
+.detail-photo-placeholder {
+    width: 100%;
+    height: 150px;
+    background: var(--surface-2);
+    border-radius: var(--radius);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 4rem;
+    margin-bottom: 16px;
+}
+
+.detail-section {
+    margin-bottom: 20px;
+}
+
+.detail-section h3 {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 6px;
+}
+
+.detail-back-btn {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 0.95rem;
+    cursor: pointer;
+    margin-bottom: 16px;
+    padding: 0;
+}
+
+.detail-back-btn:hover { text-decoration: underline; }
+
+/* ===== ANIMATIONS ===== */
+.sheet {
+    transform: translateY(100%);
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.sheet.active {
+    display: block;
+    transform: translateY(0);
+}
+
+.modal-overlay {
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+}
+
+.modal-overlay.active {
+    display: flex;
+    opacity: 1;
+    pointer-events: auto;
+}
+
+.modal-overlay .modal {
+    transform: scale(0.95);
+    transition: transform 0.2s ease;
+}
+
+.modal-overlay.active .modal {
+    transform: scale(1);
+}
+
+.card {
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+.mobile-page, .desktop-page {
+    animation: pageFade 0.2s ease;
+}
+
+@keyframes pageFade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
