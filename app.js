@@ -916,7 +916,7 @@ function exportGuitarPDF(guitarId) {
     Swal.fire({ title: 'Generating PDF...', background: '#1a1a1a', color: '#f0f0f0', allowOutsideClick: false, didOpen: function() { Swal.showLoading(); } });
 
     var photoHtml = g.photoURL
-        ? '<img style="width:100%;max-height:200px;object-fit:cover;border-radius:8px;margin-bottom:16px;" src="' + g.photoURL + '">'
+        ? '<img style="display:block;margin:0 auto 16px;max-width:50%;max-height:200px;object-fit:contain;border-radius:8px;" src="' + g.photoURL + '">'
         : '';
 
     var specsHtml = '';
